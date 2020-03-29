@@ -1,0 +1,4 @@
+BEGIN;
+DROP TABLE users;
+DROP TABLE times;
+COMMIT;
