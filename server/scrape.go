@@ -13,30 +13,32 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func check(e error) {
-	if e != nil {
-		panic(e)
-	}
-}
-
-func parseTime(s string) int {
+func parseTime(s string) (int, error) {
 	split := strings.Split(s, ":")
 
 	minutes, err := strconv.Atoi(split[0])
-	check(err)
-	seconds, err := strconv.Atoi(split[1])
-	check(err)
 
-	return minutes*60 + seconds
+	if err != nil {
+		return 0, err
+	}
+
+	seconds, err := strconv.Atoi(split[1])
+	if err != nil {
+		return 0, err
+	}
+
+	return minutes*60 + seconds, nil
 }
 
-func scrape(db *sql.DB) {
+func scrape(db *sql.DB) error {
 	var cookieString string
 
 	row := db.QueryRow("SELECT cookie FROM cookie LIMIT 1")
 
 	err := row.Scan(&cookieString)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	cookieString = strings.TrimSpace(cookieString)
 
@@ -46,18 +48,24 @@ func scrape(db *sql.DB) {
 	reader := strings.NewReader("")
 
 	request, err := http.NewRequest("GET", "https://www.nytimes.com/puzzles/leaderboards", reader)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	request.Header = header
 
 	client := http.Client{}
 	resp, err := client.Do(request)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	regex := regexp.MustCompile(`window.data\s*=\s*([^<]*)`)
 
@@ -69,7 +77,9 @@ func scrape(db *sql.DB) {
 
 	stringDate := rawData["printDate"].(string)
 	date, err := time.Parse("2006-01-02", stringDate)
-	check(err)
+	if err != nil {
+		return err
+	}
 
 	for _, personData := range rawData["scoreList"].([]interface{}) {
 		assertedPerson := personData.(map[string]interface{})
@@ -82,34 +92,48 @@ func scrape(db *sql.DB) {
 
 		if err != nil {
 			if err != sql.ErrNoRows {
-				panic(err)
+				return err
 			}
 
 			_, err := db.Exec("INSERT INTO users (name, username) VALUES ($1, $2)", assertedPerson["name"], assertedPerson["name"])
-			check(err)
+			if err != nil {
+				return err
+			}
 
 			row := db.QueryRow("SELECT id FROM users WHERE username = $1", assertedPerson["name"])
 
 			err = row.Scan(&id)
-			check(err)
+			if err != nil {
+				return err
+			}
 		}
 
 		if assertedPerson["solveTime"] != nil {
-			solveTime := parseTime(assertedPerson["solveTime"].(string))
+			solveTime, err := parseTime(assertedPerson["solveTime"].(string))
+
+			if err != nil {
+				return err
+			}
 
 			row := db.QueryRow("SELECT EXISTS (SELECT id FROM times WHERE user_id = $1 AND date = $2)", id, date)
 
 			var doesExist bool
 
-			err := row.Scan(&doesExist)
-			check(err)
+			err = row.Scan(&doesExist)
+			if err != nil {
+				return err
+			}
 
 			if !doesExist {
 				_, err := db.Exec("INSERT INTO times (user_id, time_in_seconds, date) VALUES ($1, $2, $3)", id, solveTime, date)
-				check(err)
+				if err != nil {
+					return err
+				}
 			}
 
 		}
 
 	}
+
+	return nil
 }

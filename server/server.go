@@ -6,10 +6,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -96,8 +99,20 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 })
 
 func main() {
-	tryDb, err := sql.Open("postgres", "postgres://localhost:5432/crossword?sslmode=disable")
-	check(err)
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+
+	err = sentry.Init(sentry.ClientOptions{Dsn: os.Getenv("DSN")})
+	if err != nil {
+		panic(err)
+	}
+
+	tryDb, err := sql.Open("postgres", os.Getenv("DB_URL"))
+	if err != nil {
+		panic(err)
+	}
 
 	db = tryDb
 
@@ -105,7 +120,10 @@ func main() {
 
 	go func() {
 		for {
-			scrape(db)
+			err := scrape(db)
+			if err != nil {
+				sentry.CaptureException(err)
+			}
 			time.Sleep(10 * time.Second)
 		}
 	}()
