@@ -12,7 +12,6 @@ import (
 	"github.com/getsentry/sentry-go"
 	"github.com/graphql-go/graphql"
 	"github.com/graphql-go/handler"
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
@@ -99,12 +98,7 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 })
 
 func main() {
-	err := godotenv.Load()
-	if err != nil {
-		panic(err)
-	}
-
-	err = sentry.Init(sentry.ClientOptions{Dsn: os.Getenv("DSN")})
+	err := sentry.Init(sentry.ClientOptions{Dsn: os.Getenv("DSN")})
 	if err != nil {
 		panic(err)
 	}

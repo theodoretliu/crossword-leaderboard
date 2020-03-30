@@ -2,3 +2,4 @@
 .vscode
 .env
 server/server
+env.sh
