@@ -75,7 +75,11 @@ func scrape(db *sql.DB) error {
 
 	json.Unmarshal([]byte(matches[1]), &rawData)
 
-	stringDate := rawData["printDate"].(string)
+	stringDate, ok := rawData["printDate"].(string)
+	if !ok {
+		return errors.New("Could not find printDate")
+	}
+
 	date, err := time.Parse("2006-01-02", stringDate)
 	if err != nil {
 		return err
