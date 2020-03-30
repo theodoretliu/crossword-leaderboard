@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"regexp"
