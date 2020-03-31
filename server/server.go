@@ -34,6 +34,57 @@ func DaysOfTheWeek() []time.Time {
 	return daysOfTheWeek
 }
 
+func WeeksTimes(id string) ([]int, error) {
+
+	daysOfTheWeek := DaysOfTheWeek()
+
+	var times []int
+
+	for _, day := range daysOfTheWeek {
+		row := db.QueryRow("SELECT time_in_seconds FROM times WHERE user_id = $1 AND date = $2 LIMIT 1", id, day)
+
+		var time int
+
+		err := row.Scan(&time)
+
+		if err == sql.ErrNoRows {
+			times = append(times, -1)
+		} else if err != nil {
+			return nil, err
+		} else {
+			times = append(times, time)
+		}
+
+	}
+
+	return times, nil
+
+}
+
+func WeeksWorstTimes() ([]int, error) {
+	daysOfTheWeek := DaysOfTheWeek()
+
+	var worstTimes []int
+
+	for _, day := range daysOfTheWeek {
+		row := db.QueryRow("SELECT time_in_seconds FROM times WHERE date = $1 ORDER BY time_in_seconds DESC LIMIT 1", day)
+
+		var worstTime int
+
+		err := row.Scan(&worstTime)
+
+		if err == sql.ErrNoRows {
+			worstTimes = append(worstTimes, -1)
+		} else if err != nil {
+			return nil, err
+		} else {
+			worstTimes = append(worstTimes, worstTime)
+		}
+	}
+
+	return worstTimes, nil
+}
+
 var db *sql.DB
 
 type UserGQL struct {
@@ -61,6 +112,50 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 			Description: "The user's username",
 		},
 
+		"weeklyAverage": &graphql.Field{
+			Type:        graphql.Int,
+			Description: "The user's weekly average",
+			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+				user, ok := p.Source.(UserGQL)
+
+				if !ok {
+					return nil, errors.New("Could not convert to UserGQL struct")
+				}
+
+				weeksWorstTimes, err := WeeksWorstTimes()
+				if err != nil {
+					return nil, err
+				}
+
+				weeksTimes, err := WeeksTimes(user.ID)
+				if err != nil {
+					return nil, err
+				}
+
+				weights := []int{25, 25, 25, 25, 25, 25, 49}
+
+				total := 0
+				totalWeight := 0
+
+				for i := 0; i < 7; i++ {
+					if weeksTimes[i] == -1 && weeksWorstTimes[i] != -1 {
+						total += weights[i] * (weeksWorstTimes[i] + 1)
+					} else if weeksTimes[i] != -1 {
+						total += weights[i] * weeksTimes[i]
+					}
+
+					if weeksTimes[i] != -1 || weeksWorstTimes[i] != -1 {
+						totalWeight += weights[i]
+					}
+				}
+
+				average := int(float64(total) / float64(totalWeight))
+
+				return average, nil
+
+			},
+		},
+
 		"weeksTimes": &graphql.Field{
 			Type: graphql.NewList(graphql.Int),
 			Resolve: func(p graphql.ResolveParams) (interface{}, error) {
@@ -70,28 +165,7 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 					return nil, errors.New("")
 				}
 
-				daysOfTheWeek := DaysOfTheWeek()
-
-				var times []int
-
-				for _, day := range daysOfTheWeek {
-					row := db.QueryRow("SELECT time_in_seconds FROM times WHERE user_id = $1 AND date = $2 LIMIT 1", value.ID, day)
-
-					var time int
-
-					err := row.Scan(&time)
-
-					if err == sql.ErrNoRows {
-						times = append(times, -1)
-					} else if err != nil {
-						return nil, err
-					} else {
-						times = append(times, time)
-					}
-
-				}
-
-				return times, nil
+				return WeeksTimes(value.ID)
 			},
 		},
 	},
