@@ -98,10 +98,16 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 })
 
 func main() {
-	err := sentry.Init(sentry.ClientOptions{Dsn: os.Getenv("DSN")})
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("DSN"),
+		AttachStacktrace: true,
+	})
 	if err != nil {
 		panic(err)
 	}
+
+	defer sentry.Flush(2 * time.Second)
+	defer sentry.Recover()
 
 	tryDb, err := sql.Open("postgres", os.Getenv("DB_URL"))
 	if err != nil {
