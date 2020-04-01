@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/getsentry/sentry-go"
 	_ "github.com/lib/pq"
 )
 
@@ -32,6 +33,8 @@ func parseTime(s string) (int, error) {
 }
 
 func scrape(db *sql.DB) error {
+	defer sentry.Flush(2 * time.Second)
+	defer sentry.Recover()
 	var cookieString string
 
 	row := db.QueryRow("SELECT cookie FROM cookie LIMIT 1")
