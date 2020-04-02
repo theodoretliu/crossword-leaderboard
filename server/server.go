@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"runtime/pprof"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -41,48 +43,90 @@ func WeeksTimes(id string) ([]int, error) {
 	daysOfTheWeek := DaysOfTheWeek()
 
 	var times []int
+	rows, err := db.Query("SELECT time_in_seconds, date FROM times WHERE user_id = $1 AND date >= $2 AND date <= $3 ORDER BY date ASC",
+		id, daysOfTheWeek[0], daysOfTheWeek[6])
 
-	for _, day := range daysOfTheWeek {
-		row := db.QueryRow("SELECT time_in_seconds FROM times WHERE user_id = $1 AND date = $2 LIMIT 1", id, day)
+	if err != nil {
+		return nil, err
+	}
 
-		var time int
+	i := 0
 
-		err := row.Scan(&time)
+	for rows.Next() {
+		var time_ int
+		var date time.Time
 
-		if err == sql.ErrNoRows {
-			times = append(times, -1)
-		} else if err != nil {
+		err = rows.Scan(&time_, &date)
+
+		if err != nil {
 			return nil, err
-		} else {
-			times = append(times, time)
 		}
 
+		for date.UTC() != daysOfTheWeek[i] {
+			i++
+			times = append(times, -1)
+		}
+
+		times = append(times, time_)
+		i++
+	}
+
+	for len(times) != 7 {
+		times = append(times, -1)
 	}
 
 	return times, nil
-
 }
 
-func WeeksWorstTimes() ([]int, error) {
+func WeeksWorstTimes(c context.Context) ([]int, error) {
+	cache, ok := c.Value("cache").(map[string]interface{})
+
+	if !ok {
+		return nil, errors.New("Could not retrieve cache from context")
+	}
+
+	weeksWorstTimesInt, found := cache["weeksWorstTimes"]
+
+	if found {
+		return weeksWorstTimesInt.([]int), nil
+	}
+
 	daysOfTheWeek := DaysOfTheWeek()
 
 	var worstTimes []int
 
-	for _, day := range daysOfTheWeek {
-		row := db.QueryRow("SELECT time_in_seconds FROM times WHERE date = $1 ORDER BY time_in_seconds DESC LIMIT 1", day)
+	rows, err := db.Query("SELECT max(time_in_seconds), date FROM times WHERE date >= $1 AND date <= $2 GROUP BY date ORDER BY date ASC", daysOfTheWeek[0], daysOfTheWeek[6])
 
-		var worstTime int
-
-		err := row.Scan(&worstTime)
-
-		if err == sql.ErrNoRows {
-			worstTimes = append(worstTimes, -1)
-		} else if err != nil {
-			return nil, err
-		} else {
-			worstTimes = append(worstTimes, worstTime)
-		}
+	if err != nil {
+		return nil, err
 	}
+
+	i := 0
+
+	for rows.Next() {
+		var worstTime int
+		var date time.Time
+
+		err = rows.Scan(&worstTime, &date)
+
+		if err != nil {
+			return nil, err
+		}
+
+		for date.UTC() != daysOfTheWeek[i] {
+			i++
+			worstTimes = append(worstTimes, -1)
+		}
+
+		worstTimes = append(worstTimes, worstTime+1)
+		i++
+	}
+
+	for len(worstTimes) != 7 {
+		worstTimes = append(worstTimes, -1)
+	}
+
+	cache["weeksWorstTimes"] = worstTimes
 
 	return worstTimes, nil
 }
@@ -124,7 +168,7 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 					return nil, errors.New("Could not convert to UserGQL struct")
 				}
 
-				weeksWorstTimes, err := WeeksWorstTimes()
+				weeksWorstTimes, err := WeeksWorstTimes(p.Context)
 				if err != nil {
 					return nil, err
 				}
@@ -179,7 +223,26 @@ type GraphqlPost struct {
 	Query         string
 }
 
+var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
 func main() {
+	flag.Parse()
+	if *cpuprofile != "" {
+		f, err := os.Create(*cpuprofile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		pprof.StartCPUProfile(f)
+	}
+
+	c := make(chan os.Signal)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		pprof.StopCPUProfile()
+		os.Exit(0)
+	}()
+
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv("DSN"),
 		AttachStacktrace: true,
@@ -315,34 +378,19 @@ func main() {
 		GraphiQL: true,
 	})
 
-	http.Handle("/graphql", h)
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-
-		query, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			return
-		}
-
-		var params GraphqlPost
-
-		err = json.Unmarshal(query, &params)
-
-		if err != nil {
-			return
-		}
-
-		result := graphql.Do(graphql.Params{
-			Schema:         schema,
-			RequestString:  params.Query,
-			VariableValues: params.Variables,
-			OperationName:  params.OperationName,
-		})
-		json.NewEncoder(w).Encode(result)
-	})
+	http.Handle("/", httpHeaderMiddleware(h))
 
 	fmt.Println("Listening on port 8080")
 	http.ListenAndServe(":8080", nil)
+}
+
+func httpHeaderMiddleware(next *handler.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		ctx := context.WithValue(r.Context(), "cache", make(map[string]interface{}))
+
+		next.ContextHandler(ctx, w, r)
+	})
 }
