@@ -2,8 +2,10 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -17,12 +19,12 @@ import (
 
 func DaysOfTheWeek() []time.Time {
 
-	now := time.Now()
+	now := time.Now().UTC()
 	dayOfWeek := now.Weekday()
 
 	duration := time.Duration(24*dayOfWeek) * time.Hour
 
-	startOfWeek := now.Add(-duration).Truncate(24 * time.Hour).UTC()
+	startOfWeek := now.Add(-duration).Truncate(24 * time.Hour)
 
 	var daysOfTheWeek []time.Time
 
@@ -171,6 +173,12 @@ var userType = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+type GraphqlPost struct {
+	OperationName string
+	Variables     map[string]interface{}
+	Query         string
+}
+
 func main() {
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv("DSN"),
@@ -308,6 +316,33 @@ func main() {
 	})
 
 	http.Handle("/graphql", h)
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		query, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			return
+		}
+
+		var params GraphqlPost
+
+		err = json.Unmarshal(query, &params)
+
+		if err != nil {
+			return
+		}
+
+		result := graphql.Do(graphql.Params{
+			Schema:         schema,
+			RequestString:  params.Query,
+			VariableValues: params.Variables,
+			OperationName:  params.OperationName,
+		})
+		json.NewEncoder(w).Encode(result)
+	})
+
 	fmt.Println("Listening on port 8080")
 	http.ListenAndServe(":8080", nil)
 }
