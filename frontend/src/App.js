@@ -76,7 +76,9 @@ function Row(props) {
 }
 
 function App() {
-  const { loading, error, data } = useQuery(GET_DATA);
+  const { loading, error, data } = useQuery(GET_DATA, {
+    pollInterval: 10 * 1000
+  });
 
   if (loading) {
     return "Loading...";
