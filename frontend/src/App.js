@@ -27,45 +27,50 @@ export const tableStyle = css`
   height: auto;
 `;
 
+function Cell(props) {
+  const { row, column, additionalCSS, gray, children } = props;
+
+  const style = css`
+    grid-row-start: ${row};
+    grid-column-start: ${column};
+    padding: 20px;
+    font-family: "Roboto", sans-serif;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  `;
+
+  const grayStyle = css`
+    background-color: #e0e0e0;
+  `;
+
+  return <div css={[style, gray && grayStyle, additionalCSS]}>{children}</div>;
+}
+
 function Row(props) {
   let {
     user: { name, weeksTimes, weeklyAverage },
-    rowNum
+    rowNum,
+    gray
   } = props;
 
   return (
     <React.Fragment>
-      <div
-        css={css`
-          grid-row-start: ${rowNum + 1};
-          grid-column-start: 1;
-          padding: 20px;
-        `}
-      >
+      <Cell row={rowNum + 1} column={1} gray={gray}>
         {name}
-      </div>
+      </Cell>
       {weeksTimes.map((weeksTime, i) => {
         return (
-          <div
-            css={css`
-              grid-row-start: ${rowNum + 1};
-              grid-column-start: ${i + 2};
-              padding: 20px;
-            `}
-          >
+          <Cell row={rowNum + 1} column={i + 2} gray={gray}>
             {weeksTime === -1 ? "-" : weeksTime}
-          </div>
+          </Cell>
         );
       })}
-      <div
-        css={css`
-          grid-row-start: ${rowNum + 1};
-          grid-column-start: 9;
-          padding: 20px;
-        `}
-      >
+      <Cell row={rowNum + 1} column={9} gray={gray}>
         {weeklyAverage}
-      </div>
+      </Cell>
     </React.Fragment>
   );
 }
@@ -94,27 +99,20 @@ function App() {
   return (
     <div css={tableStyle}>
       {["Name", ...dates, "Weekly Average"].map((header, i) => (
-        <div
-          css={css`
-            grid-column-start: ${i + 1};
-            grid-row-start: 1;
-            border: 1px solid;
-            border-right: none;
-            border-bottom: none;
-            text-align: center;
-            padding: 20px;
+        <Cell
+          row={1}
+          column={i + 1}
+          additionalCSS={css`
             font-weight: bold;
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
+            color: white;
+            background-color: #4d88f8;
           `}
         >
           {header}
-        </div>
+        </Cell>
       ))}
       {users.map((user, i) => (
-        <Row user={user} rowNum={i + 1} />
+        <Row user={user} rowNum={i + 1} gray={i % 2 === 1} />
       ))}
     </div>
   );
