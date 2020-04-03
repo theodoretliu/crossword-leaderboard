@@ -1,5 +1,5 @@
 /** @jsx jsx */
-import React from "react";
+import React, { useState } from "react";
 import { css, jsx } from "@emotion/core";
 import { useQuery } from "@apollo/react-hooks";
 import { gql } from "apollo-boost";
@@ -28,7 +28,7 @@ export const tableStyle = css`
 `;
 
 function Cell(props) {
-  const { row, column, additionalCSS, gray, children } = props;
+  const { onClick, row, column, additionalCSS, gray, children } = props;
 
   const style = css`
     grid-row-start: ${row};
@@ -46,7 +46,11 @@ function Cell(props) {
     background-color: #e0e0e0;
   `;
 
-  return <div css={[style, gray && grayStyle, additionalCSS]}>{children}</div>;
+  return (
+    <div onClick={onClick} css={[style, gray && grayStyle, additionalCSS]}>
+      {children}
+    </div>
+  );
 }
 
 function Row(props) {
@@ -63,7 +67,12 @@ function Row(props) {
       </Cell>
       {weeksTimes.map((weeksTime, i) => {
         return (
-          <Cell row={rowNum + 1} column={i + 2} gray={gray}>
+          <Cell
+            key={name + weeksTime + i}
+            row={rowNum + 1}
+            column={i + 2}
+            gray={gray}
+          >
             {weeksTime === -1 ? "-" : weeksTime}
           </Cell>
         );
@@ -76,6 +85,11 @@ function Row(props) {
 }
 
 function App() {
+  const [{ orderBy, ascending }, setOrder] = useState({
+    orderBy: "weeklyAverage",
+    ascending: true
+  });
+
   const { loading, error, data } = useQuery(GET_DATA, {
     pollInterval: 10 * 1000
   });
@@ -96,25 +110,84 @@ function App() {
 
   let users = data.users.slice();
 
-  users.sort((user1, user2) => user1.weeklyAverage - user2.weeklyAverage);
+  users = users.map(user => {
+    let newObj = { ...user };
+    for (let i = 0; i < 7; ++i) {
+      newObj[i] = user.weeksTimes[i];
+    }
+
+    return newObj;
+  });
+
+  users.sort((user1, user2) => {
+    let user1data = user1[orderBy] === -1 ? 10000 : user1[orderBy];
+    let user2data = user2[orderBy] === -1 ? 10000 : user2[orderBy];
+
+    let diff;
+
+    if (typeof user1data === "string") {
+      diff = user1data.localeCompare(user2data);
+    } else {
+      diff = user1data - user2data;
+    }
+
+    if (ascending) {
+      return diff;
+    }
+
+    return -diff;
+  });
+
+  const headers = [
+    { title: "Name", key: "name" },
+    ...dates.map((date, i) => ({ title: date, key: i })),
+    { title: "Weekly Average", key: "weeklyAverage" }
+  ];
 
   return (
     <div css={tableStyle}>
-      {["Name", ...dates, "Weekly Average"].map((header, i) => (
+      {headers.map((header, i) => (
         <Cell
+          key={JSON.stringify(header)}
           row={1}
           column={i + 1}
           additionalCSS={css`
             font-weight: bold;
             color: white;
             background-color: #4d88f8;
+            cursor: pointer;
+            position: relative;
           `}
+          onClick={() => {
+            if (orderBy === header.key) {
+              setOrder({ orderBy, ascending: !ascending });
+            } else {
+              setOrder({ orderBy: header.key, ascending: true });
+            }
+          }}
         >
-          {header}
+          {header.title}
+          {header.key === orderBy && (
+            <div
+              css={css`
+                position: absolute;
+                font-size: 12px;
+                right: 5px;
+                bottom: 5px;
+              `}
+            >
+              {!ascending ? " \u25BC" : " \u25B2"}
+            </div>
+          )}
         </Cell>
       ))}
       {users.map((user, i) => (
-        <Row user={user} rowNum={i + 1} gray={i % 2 === 1} />
+        <Row
+          key={JSON.stringify(user)}
+          user={user}
+          rowNum={i + 1}
+          gray={i % 2 === 1}
+        />
       ))}
     </div>
   );
