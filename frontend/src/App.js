@@ -57,7 +57,7 @@ function Row(props) {
   let {
     user: { name, weeksTimes, weeklyAverage },
     rowNum,
-    gray
+    gray,
   } = props;
 
   return (
@@ -87,11 +87,11 @@ function Row(props) {
 function App() {
   const [{ orderBy, ascending }, setOrder] = useState({
     orderBy: "weeklyAverage",
-    ascending: true
+    ascending: true,
   });
 
   const { loading, error, data } = useQuery(GET_DATA, {
-    pollInterval: 10 * 1000
+    pollInterval: 10 * 1000,
   });
 
   if (loading) {
@@ -102,15 +102,13 @@ function App() {
     return "there was an error";
   }
 
-  let dates = data.daysOfTheWeek.map(x =>
-    dayjs(x)
-      .utc()
-      .format("dddd, MMMM D, YYYY")
+  let dates = data.daysOfTheWeek.map((x) =>
+    dayjs(x).utc().format("dddd, MMMM D, YYYY")
   );
 
   let users = data.users.slice();
 
-  users = users.map(user => {
+  users = users.map((user) => {
     let newObj = { ...user };
     for (let i = 0; i < 7; ++i) {
       newObj[i] = user.weeksTimes[i];
@@ -141,7 +139,7 @@ function App() {
   const headers = [
     { title: "Name", key: "name" },
     ...dates.map((date, i) => ({ title: date, key: i })),
-    { title: "Weekly Average", key: "weeklyAverage" }
+    { title: "Weekly Average", key: "weeklyAverage" },
   ];
 
   return (

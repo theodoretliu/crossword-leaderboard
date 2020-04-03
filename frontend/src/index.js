@@ -6,7 +6,7 @@ import ApolloClient from "apollo-boost";
 import "./normalize.css";
 
 const client = new ApolloClient({
-  uri: process.env.REACT_APP_GRAPHQL_URL
+  uri: process.env.REACT_APP_GRAPHQL_URL,
 });
 
 ReactDOM.render(

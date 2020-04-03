@@ -7,12 +7,12 @@ export function Table(props) {
 
   return (
     <div>
-      {headers.map(header => (
+      {headers.map((header) => (
         <div>{header}</div>
       ))}
-      {rows.map(rows => (
+      {rows.map((rows) => (
         <div>
-          {rows.map(row => (
+          {rows.map((row) => (
             <div>{row}</div>
           ))}
         </div>
