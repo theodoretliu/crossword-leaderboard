@@ -6,6 +6,8 @@ import { gql } from "apollo-boost";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 
+import { Header } from "./Header";
+
 dayjs.extend(utc);
 
 const GET_DATA = gql`
@@ -90,12 +92,28 @@ function App() {
     ascending: true,
   });
 
+  // eslint-disable-next-line
+  const [removedUsers, _] = useState(() => {
+    let parsed = window.localStorage.getItem("removedUsers");
+
+    if (!parsed) {
+      return [];
+    }
+
+    return JSON.parse(parsed);
+  });
+
   const { loading, error, data } = useQuery(GET_DATA, {
     pollInterval: 10 * 1000,
   });
 
   if (loading) {
-    return "Loading...";
+    return (
+      <React.Fragment>
+        <Header />
+        {"Loading"}
+      </React.Fragment>
+    );
   }
 
   if (error) {
@@ -108,14 +126,16 @@ function App() {
 
   let users = data.users.slice();
 
-  users = users.map((user) => {
-    let newObj = { ...user };
-    for (let i = 0; i < 7; ++i) {
-      newObj[i] = user.weeksTimes[i];
-    }
+  users = users
+    .filter((user) => !removedUsers.includes(user.name))
+    .map((user) => {
+      let newObj = { ...user };
+      for (let i = 0; i < 7; ++i) {
+        newObj[i] = user.weeksTimes[i];
+      }
 
-    return newObj;
-  });
+      return newObj;
+    });
 
   users.sort((user1, user2) => {
     let user1data = user1[orderBy] === -1 ? 10000 : user1[orderBy];
@@ -143,51 +163,54 @@ function App() {
   ];
 
   return (
-    <div css={tableStyle}>
-      {headers.map((header, i) => (
-        <Cell
-          key={JSON.stringify(header)}
-          row={1}
-          column={i + 1}
-          additionalCSS={css`
-            font-weight: bold;
-            color: white;
-            background-color: #4d88f8;
-            cursor: pointer;
-            position: relative;
-          `}
-          onClick={() => {
-            if (orderBy === header.key) {
-              setOrder({ orderBy, ascending: !ascending });
-            } else {
-              setOrder({ orderBy: header.key, ascending: true });
-            }
-          }}
-        >
-          {header.title}
-          {header.key === orderBy && (
-            <div
-              css={css`
-                position: absolute;
-                font-size: 12px;
-                right: 5px;
-                bottom: 5px;
-              `}
-            >
-              {!ascending ? " \u25BC" : " \u25B2"}
-            </div>
-          )}
-        </Cell>
-      ))}
-      {users.map((user, i) => (
-        <Row
-          key={JSON.stringify(user)}
-          user={user}
-          rowNum={i + 1}
-          gray={i % 2 === 1}
-        />
-      ))}
-    </div>
+    <React.Fragment>
+      <Header />
+      <div css={tableStyle}>
+        {headers.map((header, i) => (
+          <Cell
+            key={JSON.stringify(header)}
+            row={1}
+            column={i + 1}
+            additionalCSS={css`
+              font-weight: bold;
+              color: white;
+              background-color: #4d88f8;
+              cursor: pointer;
+              position: relative;
+            `}
+            onClick={() => {
+              if (orderBy === header.key) {
+                setOrder({ orderBy, ascending: !ascending });
+              } else {
+                setOrder({ orderBy: header.key, ascending: true });
+              }
+            }}
+          >
+            {header.title}
+            {header.key === orderBy && (
+              <div
+                css={css`
+                  position: absolute;
+                  font-size: 12px;
+                  right: 5px;
+                  bottom: 5px;
+                `}
+              >
+                {!ascending ? " \u25BC" : " \u25B2"}
+              </div>
+            )}
+          </Cell>
+        ))}
+        {users.map((user, i) => (
+          <Row
+            key={JSON.stringify(user)}
+            user={user}
+            rowNum={i + 1}
+            gray={i % 2 === 1}
+          />
+        ))}
+      </div>
+    </React.Fragment>
   );
 }
 

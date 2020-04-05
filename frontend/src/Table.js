@@ -2,7 +2,6 @@
 import { jsx } from "@emotion/core";
 
 export function Table(props) {
-  console.log(props);
   let { headers, rows } = props;
 
   return (
