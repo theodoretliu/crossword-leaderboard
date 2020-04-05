@@ -6,7 +6,6 @@ package graph
 import (
 	"context"
 	"database/sql"
-	"fmt"
 
 	"theodoretliu.com/crossword/server/graph/generated"
 	"theodoretliu.com/crossword/server/graph/model"
@@ -94,8 +93,6 @@ func (r *userResolver) WeeklyAverage(ctx context.Context, user *model.User) (int
 
 	total := 0
 	totalWeight := 0
-
-	fmt.Println("weeks worst times", weeksWorstTimes)
 
 	for i := 0; i < 7; i++ {
 		if weeksTimes[i] == -1 && weeksWorstTimes[i] != -1 {

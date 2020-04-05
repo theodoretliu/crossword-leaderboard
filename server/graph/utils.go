@@ -2,7 +2,6 @@ package graph
 
 import (
 	"database/sql"
-	"fmt"
 	"time"
 )
 
@@ -92,8 +91,6 @@ func GetWeeksWorstTimes(db *sql.DB) ([]int, error) {
 
 		err = rows.Scan(&worstTime, &date)
 
-		fmt.Println("worstTime", date, worstTime)
-
 		if err != nil {
 			return nil, err
 		}
@@ -142,8 +139,6 @@ func CreateNewWorstTimesLoader(db *sql.DB) *WeeksWorstTimesLoader {
 func CreateNewWeeksTimesLoader(db *sql.DB) *WeeksTimesLoader {
 	return NewWeeksTimesLoader(WeeksTimesLoaderConfig{
 		Fetch: func(keys []string) ([][]int, []error) {
-			fmt.Println(keys)
-
 			daysOfTheWeek := GetDaysOfTheWeek()
 
 			output := [][]int{}
