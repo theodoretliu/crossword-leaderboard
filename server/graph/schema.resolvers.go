@@ -1,11 +1,13 @@
 package graph
 
+
 // This file will be automatically regenerated based on the schema, any resolver implementations
 // will be copied through when generating and any unknown code will be moved to the end.
 
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"theodoretliu.com/crossword/server/graph/generated"
 	"theodoretliu.com/crossword/server/graph/model"
@@ -66,7 +68,7 @@ func (r *queryResolver) DaysOfTheWeek(ctx context.Context) ([]string, error) {
 	var stringDays []string
 
 	for _, day := range days {
-		stringDays = append(stringDays, day.String())
+		stringDays = append(stringDays, day.Format(time.RFC1123Z))
 	}
 
 	return stringDays, nil
