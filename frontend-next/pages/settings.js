@@ -1,7 +1,6 @@
 /** @jsx jsx */
 import { jsx, css } from "@emotion/core";
 import React, { useState, useEffect } from "react";
-import { Header } from "../../frontend-next/components/Header";
 import { getDataFromTree } from "@apollo/react-ssr";
 import { gql } from "apollo-boost";
 import { useQuery, ApolloProvider } from "@apollo/react-hooks";
