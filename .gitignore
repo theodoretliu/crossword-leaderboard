@@ -3,3 +3,5 @@
 .env
 server/server
 env.sh
+
+.vercel
