@@ -11,7 +11,7 @@ export function Header() {
         align-items: center;
       `}
     >
-      <Link href="/">
+      <Link href="/" passHref>
         <a
           css={css`
             font-family: Roboto, sans-serif;
@@ -31,7 +31,7 @@ export function Header() {
         </a>
       </Link>
 
-      <Link href="/settings">
+      <Link href="/settings" passHref>
         <a
           css={css`
             font-family: Roboto, sans-serif;
