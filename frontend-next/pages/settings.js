@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { getDataFromTree } from "@apollo/react-ssr";
 import { gql } from "apollo-boost";
 import { useQuery, ApolloProvider } from "@apollo/react-hooks";
+import { withApollo } from "../utils";
 import { ApolloClient } from "apollo-client";
 import { createHttpLink } from "apollo-link-http";
 import { InMemoryCache } from "apollo-cache-inmemory";
@@ -40,7 +41,7 @@ function UserRow(props) {
   );
 }
 
-export default function Settings() {
+function Settings() {
   const [removedUsers, setRemovedUsers] = useState(() => {
     if (typeof window === "undefined") {
       return [];
@@ -157,25 +158,4 @@ export default function Settings() {
   );
 }
 
-export async function getServerSideProps(context) {
-  let client = new ApolloClient({
-    ssrMode: true,
-    link: createHttpLink({
-      uri: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/graphql",
-      credentials: "same-origin",
-    }),
-    cache: new InMemoryCache(),
-  });
-
-  const c = {};
-
-  const A = (
-    <ApolloProvider client={client}>
-      <Settings />
-    </ApolloProvider>
-  );
-
-  await getDataFromTree(A);
-
-  return { props: client.extract() };
-}
+export default withApollo({ ssr: true })(Settings);

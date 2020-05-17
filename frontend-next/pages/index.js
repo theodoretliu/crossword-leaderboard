@@ -1,17 +1,12 @@
 /** @jsx jsx */
 import React, { useState } from "react";
 import { css, jsx } from "@emotion/core";
-import { getDataFromTree } from "@apollo/react-ssr";
-import { ApolloProvider, useQuery } from "@apollo/react-hooks";
 import { gql } from "apollo-boost";
+import { useQuery } from "@apollo/react-hooks";
 import { Header } from "../components/Header";
+import { withApollo } from "../utils";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-
-import { ApolloClient } from "apollo-client";
-import { createHttpLink } from "apollo-link-http";
-import { StaticRouter as Router } from "react-router-dom";
-import { InMemoryCache } from "apollo-cache-inmemory";
 
 dayjs.extend(utc);
 
@@ -117,16 +112,11 @@ function App() {
   });
 
   if (loading) {
-    return (
-      <React.Fragment>
-        <Header />
-        {"Loading"}
-      </React.Fragment>
-    );
+    return <Header />;
   }
 
   if (error) {
-    return "there was an error";
+    return <div>hello</div>;
   }
 
   let dates = data.daysOfTheWeek.map((x) =>
@@ -223,29 +213,4 @@ function App() {
   );
 }
 
-export async function getServerSideProps(context) {
-  let client = new ApolloClient({
-    ssrMode: true,
-    link: createHttpLink({
-      uri: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/graphql",
-      credentials: "same-origin",
-    }),
-    cache: new InMemoryCache(),
-  });
-
-  const c = {};
-
-  const A = (
-    <ApolloProvider client={client}>
-      <App />
-    </ApolloProvider>
-  );
-
-  await getDataFromTree(A);
-
-  return { props: client.extract() };
-}
-
-export default function (props) {
-  return <App />;
-}
+export default withApollo({ ssr: true })(App);
