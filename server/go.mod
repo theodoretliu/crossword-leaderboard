@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/99designs/gqlgen v0.11.3
 	github.com/getsentry/sentry-go v0.5.1
+	github.com/gin-gonic/gin v1.4.0
 	github.com/graph-gophers/dataloader v5.0.0+incompatible
 	github.com/graph-gophers/graphql-go v0.0.0-20200309224638-dae41bde9ef9 // indirect
 	github.com/graphql-go/graphql v0.7.9

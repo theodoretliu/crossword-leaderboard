@@ -5,3 +5,7 @@ server/server
 env.sh
 
 .vercel
+.tmp
+.s*
+*.dump
+logfile

@@ -11,6 +11,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/getsentry/sentry-go"
+	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
 	"theodoretliu.com/crossword/server/graph"
 	"theodoretliu.com/crossword/server/graph/generated"
@@ -19,6 +20,12 @@ import (
 var db *sql.DB
 
 const defaultPort = "8080"
+
+func handlerToGinHandler(h http.Handler) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		h.ServeHTTP(c.Writer, c.Request)
+	}
+}
 
 func main() {
 	err := sentry.Init(sentry.ClientOptions{
@@ -33,6 +40,7 @@ func main() {
 	defer sentry.Recover()
 
 	db, err = sql.Open("postgres", os.Getenv("DB_URL"))
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -49,6 +57,8 @@ func main() {
 		}
 	}()
 
+	r := gin.Default()
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -56,11 +66,11 @@ func main() {
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{}}))
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/graphql"))
-	http.Handle("/graphql", middleware(db, srv))
+	r.GET("/", handlerToGinHandler(playground.Handler("GraphQL playground", "/graphql")))
+	r.POST("/graphql", handlerToGinHandler(middleware(db, srv)))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	r.Run(":" + port)
 }
 
 func middleware(db *sql.DB, next http.Handler) http.Handler {
