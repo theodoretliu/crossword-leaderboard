@@ -68,6 +68,9 @@ func main() {
 
 	r.GET("/", handlerToGinHandler(playground.Handler("GraphQL playground", "/graphql")))
 	r.POST("/graphql", handlerToGinHandler(middleware(db, srv)))
+	r.GET("/new", func(c *gin.Context) {
+		c.JSON(http.StatusOK, NewIndexHandler())
+	})
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	r.Run(":" + port)
