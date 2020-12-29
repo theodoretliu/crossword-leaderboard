@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"math"
 	"time"
 )
 
@@ -28,6 +29,75 @@ func GetDaysOfTheWeek() []time.Time {
 	}
 
 	return daysOfTheWeek
+}
+
+func GetWeeksWorstTimes(daysOfTheWeek []time.Time) []int32 {
+	var worstTimes []int32
+
+	query := `
+SELECT max(time_in_seconds), date FROM times 
+	WHERE date >= $1 AND date <= $2 
+	GROUP BY date 
+	ORDER BY date ASC
+	`
+
+	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	i := 0
+
+	for rows.Next() {
+		var worstTime int32
+		var date time.Time
+
+		err = rows.Scan(&worstTime, &date)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		for date.UTC() != daysOfTheWeek[i] {
+			i++
+			worstTimes = append(worstTimes, -1)
+		}
+
+		worstTimes = append(worstTimes, worstTime)
+	}
+
+	return worstTimes
+}
+
+func max(x, y int) int {
+	if x > y {
+		return x
+	}
+	return y
+}
+
+func WeeklyAverage(times []int32, weeksWorstTimes []int32) int32 {
+	totalSquares := 0
+	totalTime := int32(0)
+	for i := 0; i < len(weeksWorstTimes); i++ {
+		if i < len(times) && times[i] != -1 {
+			totalTime += times[i]
+		} else if weeksWorstTimes[i] != -1 {
+			totalTime += weeksWorstTimes[i]
+		}
+
+		if weeksWorstTimes[i] != -1 {
+			if i != 6 {
+				totalSquares += 25
+			} else {
+				totalSquares += 49
+			}
+		}
+	}
+
+	return int32(math.Round(float64(totalTime) / float64(totalSquares) * float64(25)))
+
 }
 
 func NewIndexHandler() []userInfo {
@@ -80,6 +150,12 @@ select username, time_in_seconds, date from
 		}
 
 		result[len(result)-1].WeeksTimes = append(result[len(result)-1].WeeksTimes, timeInSeconds.Int32)
+	}
+
+	weeksWorstTimes := GetWeeksWorstTimes(daysOfTheWeek)
+
+	for i := 0; i < len(result); i++ {
+		result[i].WeeksAverage = WeeklyAverage(result[i].WeeksTimes, weeksWorstTimes)
 	}
 
 	return result
