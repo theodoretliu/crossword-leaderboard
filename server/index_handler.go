@@ -70,6 +70,7 @@ SELECT max(time_in_seconds), date FROM times
 		}
 
 		worstTimes = append(worstTimes, worstTime)
+		i++
 	}
 
 	return worstTimes
@@ -155,6 +156,7 @@ select username, time_in_seconds, date from
 		}
 
 		result[len(result)-1].WeeksTimes = append(result[len(result)-1].WeeksTimes, timeInSeconds.Int32)
+		dateIndex++
 	}
 
 	weeksWorstTimes := GetWeeksWorstTimes(daysOfTheWeek)
