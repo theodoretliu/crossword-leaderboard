@@ -8,13 +8,15 @@ import (
 	"os"
 	"time"
 
-	"github.com/gin-contrib/cors"
-
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/getsentry/sentry-go"
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	"github.com/newrelic/go-agent/v3/integrations/nrgin"
+	"github.com/newrelic/go-agent/v3/newrelic"
+
 	"theodoretliu.com/crossword/server/graph"
 	"theodoretliu.com/crossword/server/graph/generated"
 )
@@ -47,6 +49,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	app, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("Crossword Leaderboard"),
+		newrelic.ConfigLicense(os.Getenv("NEW_RELIC_LICENSE_KEY")),
+	)
+
 	defer db.Close()
 
 	go func() {
@@ -62,6 +69,8 @@ func main() {
 	r := gin.Default()
 
 	r.Use(cors.Default())
+
+	r.Use(nrgin.Middleware(app))
 
 	port := os.Getenv("PORT")
 	if port == "" {

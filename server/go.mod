@@ -8,5 +8,7 @@ require (
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.5.0
 	github.com/lib/pq v1.3.0
+	github.com/newrelic/go-agent/v3 v3.9.0
+	github.com/newrelic/go-agent/v3/integrations/nrgin v1.1.0
 	github.com/vektah/gqlparser/v2 v2.0.1
 )
