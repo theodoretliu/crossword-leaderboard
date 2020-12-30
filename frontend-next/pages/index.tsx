@@ -1,8 +1,6 @@
 /** @jsx jsx */
 import React, { useState } from "react";
 import { css, jsx } from "@emotion/core";
-import { gql } from "apollo-boost";
-import { useQuery } from "@apollo/react-hooks";
 import { Header } from "components/header";
 import { secondsToMinutes, withApollo } from "../utils";
 import { API_URL } from "api";

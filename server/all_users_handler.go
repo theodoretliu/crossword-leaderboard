@@ -7,9 +7,7 @@ type AllUsersResponse struct {
 }
 
 func AllUsersHandler() AllUsersResponse {
-	query := `
-SELECT username FROM users;
-	`
+	query := `SELECT username FROM users;`
 
 	res, err := db.Query(query)
 
