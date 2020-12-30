@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { css, jsx } from "@emotion/core";
 import { Header } from "components/header";
-import { secondsToMinutes, withApollo } from "../utils";
+import { secondsToMinutes } from "../utils";
 import { API_URL } from "api";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
