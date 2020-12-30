@@ -3,24 +3,45 @@ import React, { useState } from "react";
 import { css, jsx } from "@emotion/core";
 import { gql } from "apollo-boost";
 import { useQuery } from "@apollo/react-hooks";
-import { Header } from "../components/Header";
+import { Header } from "components/header";
 import { withApollo } from "../utils";
+import { API_URL } from "api";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
+import useSWR from "swr";
+import * as t from "io-ts";
 
 dayjs.extend(utc);
 
-const GET_DATA = gql`
-  query GetData {
-    daysOfTheWeek
+const UserType = t.type({
+  Username: t.string,
+  WeeksTimes: t.array(t.number),
+  WeeksAverage: t.number,
+});
 
-    users {
-      weeksTimes
-      weeklyAverage
-      name
-    }
+const ResponseType = t.type({
+  Users: t.array(UserType),
+  DaysOfTheWeek: t.array(t.string),
+});
+
+async function fetcher(key: string) {
+  const res = await fetch(API_URL + key);
+  const json = await res.json();
+
+  const decoded = ResponseType.decode(json);
+
+  if (decoded._tag == "Left") {
+    throw decoded.left;
   }
-`;
+
+  return decoded.right;
+}
+
+export async function getServerSideProps() {
+  const initialData = await fetcher("/new");
+
+  return { props: { initialData } };
+}
 
 export const tableStyle = css`
   display: grid;
@@ -29,7 +50,16 @@ export const tableStyle = css`
   height: auto;
 `;
 
-function Cell(props) {
+interface CellProps {
+  onClick?: () => void;
+  row: number;
+  column: number;
+  additionalCSS?: ReturnType<typeof css>;
+  gray?: boolean;
+  children: React.ReactNode;
+}
+
+function Cell(props: CellProps) {
   const { onClick, row, column, additionalCSS, gray, children } = props;
 
   const style = css`
@@ -55,22 +85,35 @@ function Cell(props) {
   );
 }
 
-function Row(props) {
-  let {
-    user: { name, weeksTimes, weeklyAverage },
-    rowNum,
-    gray,
-  } = props;
+function padRight<T>(arr: Array<T>, value: T, length: number): Array<T> {
+  let newArr = arr.slice();
 
+  while (newArr.length < length) {
+    newArr.push(value);
+  }
+
+  return newArr;
+}
+
+interface RowProps {
+  User: { Username: string; WeeksTimes: Array<number>; WeeksAverage: number };
+  rowNum: number;
+  gray: boolean;
+}
+function Row({
+  User: { Username, WeeksTimes, WeeksAverage },
+  rowNum,
+  gray,
+}: RowProps) {
   return (
     <React.Fragment>
       <Cell row={rowNum + 1} column={1} gray={gray}>
-        {name}
+        {Username}
       </Cell>
-      {weeksTimes.map((weeksTime, i) => {
+      {padRight(WeeksTimes, -1, 7).map((weeksTime, i) => {
         return (
           <Cell
-            key={name + weeksTime + i}
+            key={Username + weeksTime + i}
             row={rowNum + 1}
             column={i + 2}
             gray={gray}
@@ -80,15 +123,18 @@ function Row(props) {
         );
       })}
       <Cell row={rowNum + 1} column={9} gray={gray}>
-        {weeklyAverage}
+        {WeeksAverage}
       </Cell>
     </React.Fragment>
   );
 }
 
-function App() {
-  const [{ orderBy, ascending }, setOrder] = useState({
-    orderBy: "weeklyAverage",
+function App({ initialData }: { initialData: t.TypeOf<typeof ResponseType> }) {
+  const [{ orderBy, ascending }, setOrder] = useState<{
+    orderBy: keyof t.TypeOf<typeof UserType> | number;
+    ascending: boolean;
+  }>({
+    orderBy: "WeeksAverage",
     ascending: true,
   });
 
@@ -107,45 +153,48 @@ function App() {
     return [];
   });
 
-  const { loading, error, data } = useQuery(GET_DATA, {
-    pollInterval: 10 * 1000,
+  const { error, data } = useSWR("/new", fetcher, {
+    initialData,
+    refreshInterval: 10 * 1000,
   });
-
-  if (loading) {
-    return <Header />;
-  }
 
   if (error) {
     return <div>hello</div>;
   }
 
-  let dates = data.daysOfTheWeek.map((x) =>
+  if (!data) {
+    return <Header />;
+  }
+
+  let dates = data.DaysOfTheWeek.map((x) =>
     dayjs(x).utc().format("dddd, MMMM D, YYYY")
   );
 
-  let users = data.users.slice();
+  let users = data.Users.slice();
 
-  users = users
-    .filter((user) => !removedUsers.includes(user.name))
+  let newUsers = users
+    .filter((user) => !removedUsers.includes(user.Username))
     .map((user) => {
-      let newObj = { ...user };
+      let newObj: typeof user & { [key: number]: number } = { ...user };
       for (let i = 0; i < 7; ++i) {
-        newObj[i] = user.weeksTimes[i];
+        newObj[i] = user.WeeksTimes[i];
       }
 
       return newObj;
     });
 
-  users.sort((user1, user2) => {
+  newUsers.sort((user1, user2) => {
     let user1data = user1[orderBy] === -1 ? 10000 : user1[orderBy];
     let user2data = user2[orderBy] === -1 ? 10000 : user2[orderBy];
 
     let diff;
 
-    if (typeof user1data === "string") {
+    if (typeof user1data === "string" && typeof user2data === "string") {
       diff = user1data.localeCompare(user2data);
-    } else {
+    } else if (typeof user1data === "number" && typeof user2data === "number") {
       diff = user1data - user2data;
+    } else {
+      diff = 0;
     }
 
     if (ascending) {
@@ -155,10 +204,13 @@ function App() {
     return -diff;
   });
 
-  const headers = [
-    { title: "Name", key: "name" },
+  const headers: Array<{
+    title: string;
+    key: keyof t.TypeOf<typeof UserType> | number;
+  }> = [
+    { title: "Name", key: "Username" },
     ...dates.map((date, i) => ({ title: date, key: i })),
-    { title: "Weekly Average", key: "weeklyAverage" },
+    { title: "Weekly Average", key: "WeeksAverage" },
   ];
 
   return (
@@ -200,10 +252,10 @@ function App() {
             )}
           </Cell>
         ))}
-        {users.map((user, i) => (
+        {newUsers.map((user, i) => (
           <Row
             key={JSON.stringify(user)}
-            user={user}
+            User={user}
             rowNum={i + 1}
             gray={i % 2 === 1}
           />
@@ -213,4 +265,4 @@ function App() {
   );
 }
 
-export default withApollo({ ssr: true })(App);
+export default App;

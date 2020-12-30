@@ -16,13 +16,16 @@
     "apollo-client": "^2.6.10",
     "apollo-link-http": "^1.5.17",
     "dayjs": "^1.9.8",
+    "fp-ts": "^2.9.3",
     "graphql": "^15.4.0",
+    "io-ts": "^2.2.13",
     "next": "^10.0.4",
     "next-apollo": "^4.0.1",
     "react": "^16.14.0",
     "react-dom": "^16.14.0",
     "react-router": "^5.2.0",
-    "react-router-dom": "^5.2.0"
+    "react-router-dom": "^5.2.0",
+    "swr": "^0.3.11"
   },
   "devDependencies": {
     "@types/react": "^17.0.0",

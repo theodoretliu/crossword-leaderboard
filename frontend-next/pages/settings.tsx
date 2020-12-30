@@ -1,14 +1,13 @@
 /** @jsx jsx */
 import { jsx, css } from "@emotion/core";
 import React, { useState, useEffect } from "react";
-import { getDataFromTree } from "@apollo/react-ssr";
 import { gql } from "apollo-boost";
 import { useQuery, ApolloProvider } from "@apollo/react-hooks";
 import { withApollo } from "../utils";
 import { ApolloClient } from "apollo-client";
 import { createHttpLink } from "apollo-link-http";
 import { InMemoryCache } from "apollo-cache-inmemory";
-import { Header } from "../components/Header";
+import { Header } from "components/header";
 import Head from "next/head";
 
 const GET_USERS = gql`
@@ -19,7 +18,12 @@ const GET_USERS = gql`
   }
 `;
 
-function UserRow(props) {
+interface UserRowProps {
+  name: string;
+  onClick: () => void;
+}
+
+function UserRow(props: UserRowProps) {
   const { name, onClick } = props;
 
   return (
@@ -42,7 +46,7 @@ function UserRow(props) {
 }
 
 function Settings() {
-  const [removedUsers, setRemovedUsers] = useState(() => {
+  const [removedUsers, setRemovedUsers] = useState<string[]>(() => {
     if (typeof window === "undefined") {
       return [];
     }
@@ -75,7 +79,7 @@ function Settings() {
     );
   }
 
-  let users = data.users;
+  let users: Array<{ name: string }> = data.users;
 
   let allowedUsers = users.filter((user) => !removedUsers.includes(user.name));
   allowedUsers.sort((u1, u2) => u1.name.localeCompare(u2.name));
