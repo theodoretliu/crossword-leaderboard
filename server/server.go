@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+"github.com/gin-contrib/cors"
+
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/getsentry/sentry-go"
@@ -58,6 +60,8 @@ func main() {
 	}()
 
 	r := gin.Default()
+
+	r.Use(cors.Default())
 
 	port := os.Getenv("PORT")
 	if port == "" {
