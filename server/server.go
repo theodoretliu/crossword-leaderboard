@@ -84,6 +84,9 @@ func main() {
 	r.GET("/new", func(c *gin.Context) {
 		c.JSON(http.StatusOK, NewIndexHandler())
 	})
+	r.GET("/all_users", func(c *gin.Context) {
+		c.JSON(http.StatusOK, AllUsersHandler())
+	})
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	r.Run(":" + port)
