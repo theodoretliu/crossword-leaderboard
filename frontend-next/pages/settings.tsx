@@ -1,22 +1,34 @@
 /** @jsx jsx */
 import { jsx, css } from "@emotion/core";
 import React, { useState, useEffect } from "react";
-import { gql } from "apollo-boost";
-import { useQuery, ApolloProvider } from "@apollo/react-hooks";
-import { withApollo } from "../utils";
-import { ApolloClient } from "apollo-client";
-import { createHttpLink } from "apollo-link-http";
-import { InMemoryCache } from "apollo-cache-inmemory";
 import { Header } from "components/header";
 import Head from "next/head";
+import useSWR from "swr";
+import * as t from "io-ts";
+import { API_URL } from "api";
 
-const GET_USERS = gql`
-  query GetUsers {
-    users {
-      name
-    }
+const UsersList = t.type({
+  Users: t.array(t.string),
+});
+
+async function fetcher(key: string) {
+  const response = await fetch(API_URL + key);
+  const json = await response.json();
+
+  const decoded = UsersList.decode(json);
+
+  if (decoded._tag == "Left") {
+    throw decoded.left;
   }
-`;
+
+  return decoded.right;
+}
+
+export async function getServerSideProps() {
+  const initialData = await fetcher("/all_users");
+
+  return { props: { initialData } };
+}
 
 interface UserRowProps {
   name: string;
@@ -45,7 +57,11 @@ function UserRow(props: UserRowProps) {
   );
 }
 
-function Settings() {
+interface SettingsProps {
+  initialData: { Users: Array<string> };
+}
+
+function Settings({ initialData }: SettingsProps) {
   const [removedUsers, setRemovedUsers] = useState<string[]>(() => {
     if (typeof window === "undefined") {
       return [];
@@ -64,11 +80,9 @@ function Settings() {
     window.localStorage.setItem("removedUsers", JSON.stringify(removedUsers));
   }, [removedUsers]);
 
-  const { loading, error, data } = useQuery(GET_USERS);
-
-  if (loading) {
-    return <Header />;
-  }
+  const { error, data } = useSWR("/all_users", fetcher, {
+    initialData,
+  });
 
   if (error) {
     return (
@@ -79,14 +93,18 @@ function Settings() {
     );
   }
 
-  let users: Array<{ name: string }> = data.users;
+  if (!data) {
+    return "loading";
+  }
 
-  let allowedUsers = users.filter((user) => !removedUsers.includes(user.name));
-  allowedUsers.sort((u1, u2) => u1.name.localeCompare(u2.name));
+  let usernames = data.Users;
 
-  let blockedUsers = users.filter((user) => removedUsers.includes(user.name));
+  let allowedUsers = usernames.filter((user) => !removedUsers.includes(user));
+  allowedUsers.sort((u1, u2) => u1.localeCompare(u2));
 
-  blockedUsers.sort((u1, u2) => u1.name.localeCompare(u2.name));
+  let blockedUsers = usernames.filter((user) => removedUsers.includes(user));
+
+  blockedUsers.sort((u1, u2) => u1.localeCompare(u2));
 
   const buttonStyle = css`
     padding: 20px;
@@ -122,15 +140,15 @@ function Settings() {
           <h2>Shown (Click to remove)</h2>
           <div
             css={buttonStyle}
-            onClick={() => setRemovedUsers(users.map((user) => user.name))}
+            onClick={() => setRemovedUsers(usernames.map((user) => user))}
           >
             Remove all
           </div>
           {allowedUsers.map((user) => (
             <UserRow
-              key={user.name}
-              name={user.name}
-              onClick={() => setRemovedUsers([...removedUsers, user.name])}
+              key={user}
+              name={user}
+              onClick={() => setRemovedUsers([...removedUsers, user])}
             />
           ))}
         </div>
@@ -147,11 +165,11 @@ function Settings() {
           </div>
           {blockedUsers.map((user) => (
             <UserRow
-              key={user.name}
-              name={user.name}
+              key={user}
+              name={user}
               onClick={() =>
                 setRemovedUsers(
-                  removedUsers.filter((username) => username !== user.name)
+                  removedUsers.filter((username) => username !== user)
                 )
               }
             />
@@ -162,4 +180,4 @@ function Settings() {
   );
 }
 
-export default withApollo({ ssr: true })(Settings);
+export default Settings;
