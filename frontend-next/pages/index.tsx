@@ -4,7 +4,7 @@ import { css, jsx } from "@emotion/core";
 import { gql } from "apollo-boost";
 import { useQuery } from "@apollo/react-hooks";
 import { Header } from "components/header";
-import { withApollo } from "../utils";
+import { secondsToMinutes, withApollo } from "../utils";
 import { API_URL } from "api";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
@@ -118,12 +118,12 @@ function Row({
             column={i + 2}
             gray={gray}
           >
-            {weeksTime === -1 ? "-" : weeksTime}
+            {weeksTime === -1 ? "" : secondsToMinutes(weeksTime)}
           </Cell>
         );
       })}
       <Cell row={rowNum + 1} column={9} gray={gray}>
-        {WeeksAverage}
+        {secondsToMinutes(WeeksAverage)}
       </Cell>
     </React.Fragment>
   );
