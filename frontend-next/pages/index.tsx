@@ -176,7 +176,7 @@ function App({ initialData }: { initialData: t.TypeOf<typeof ResponseType> }) {
     .filter((user) => !removedUsers.includes(user.Username))
     .map((user) => {
       let newObj: typeof user & { [key: number]: number } = { ...user };
-      for (let i = 0; i < 7; ++i) {
+      for (let i = 0; i < user.WeeksTimes.length; ++i) {
         newObj[i] = user.WeeksTimes[i];
       }
 
@@ -184,8 +184,14 @@ function App({ initialData }: { initialData: t.TypeOf<typeof ResponseType> }) {
     });
 
   newUsers.sort((user1, user2) => {
-    let user1data = user1[orderBy] === -1 ? 10000 : user1[orderBy];
-    let user2data = user2[orderBy] === -1 ? 10000 : user2[orderBy];
+    let user1data =
+      user1[orderBy] === -1 || user1[orderBy] === undefined
+        ? 10000
+        : user1[orderBy];
+    let user2data =
+      user2[orderBy] === -1 || user2[orderBy] === undefined
+        ? 10000
+        : user2[orderBy];
 
     let diff;
 
