@@ -13,6 +13,11 @@ type userInfo struct {
 	WeeksAverage int32
 }
 
+type indexResponse struct {
+	Users         []userInfo
+	DaysOfTheWeek []string
+}
+
 func GetDaysOfTheWeek() []time.Time {
 	now := time.Now().UTC()
 	dayOfWeek := now.Weekday()
@@ -35,9 +40,9 @@ func GetWeeksWorstTimes(daysOfTheWeek []time.Time) []int32 {
 	var worstTimes []int32
 
 	query := `
-SELECT max(time_in_seconds), date FROM times 
-	WHERE date >= $1 AND date <= $2 
-	GROUP BY date 
+SELECT max(time_in_seconds), date FROM times
+	WHERE date >= $1 AND date <= $2
+	GROUP BY date
 	ORDER BY date ASC
 	`
 
@@ -100,14 +105,14 @@ func WeeklyAverage(times []int32, weeksWorstTimes []int32) int32 {
 
 }
 
-func NewIndexHandler() []userInfo {
+func NewIndexHandler() indexResponse {
 	daysOfTheWeek := GetDaysOfTheWeek()
 	query := `
-select username, time_in_seconds, date from 
-	(select * from users) as A 
-	left join 
-	(select * from times where date >= $1 AND date <= $2) as B 
-	on A.id = B.user_id 
+select username, time_in_seconds, date from
+	(select * from users) as A
+	left join
+	(select * from times where date >= $1 AND date <= $2) as B
+	on A.id = B.user_id
 	order by A.id, B.date;
 	`
 
@@ -158,5 +163,11 @@ select username, time_in_seconds, date from
 		result[i].WeeksAverage = WeeklyAverage(result[i].WeeksTimes, weeksWorstTimes)
 	}
 
-	return result
+	daysOfTheWeekStrings := []string{}
+
+	for _, day := range daysOfTheWeek {
+		daysOfTheWeekStrings = append(daysOfTheWeekStrings, day.Format(time.RFC1123Z))
+
+	}
+	return indexResponse{Users: result, DaysOfTheWeek: daysOfTheWeekStrings}
 }

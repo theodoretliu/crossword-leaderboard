@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/cors"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
