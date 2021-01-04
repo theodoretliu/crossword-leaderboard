@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -76,6 +77,24 @@ func main() {
 	})
 	r.GET("/all_users", func(c *gin.Context) {
 		c.JSON(http.StatusOK, AllUsersHandler())
+	})
+	r.GET("/week/:year/:month/:day", func(c *gin.Context) {
+		year, err := strconv.Atoi(c.Param("year"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		month, err := strconv.Atoi(c.Param("month"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		day, err := strconv.Atoi(c.Param("day"))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		c.JSON(http.StatusOK, WeekTimesHandler(year, month, day))
 	})
 
 	r.Run(":" + port)
