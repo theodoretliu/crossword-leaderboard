@@ -8,6 +8,7 @@ require (
 	github.com/gin-gonic/gin v1.5.0
 	github.com/lib/pq v1.3.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
+	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/newrelic/go-agent/v3 v3.9.0
 	github.com/newrelic/go-agent/v3/integrations/nrgin v1.1.0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect

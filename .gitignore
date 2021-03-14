@@ -7,5 +7,7 @@ env.sh
 .vercel
 .tmp
 .s*
-*.dump
+*.dump*
 logfile
+
+dev.sqlite3*

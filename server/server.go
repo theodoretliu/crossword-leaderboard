@@ -12,6 +12,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/lib/pq"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/newrelic/go-agent/v3/integrations/nrgin"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
@@ -38,7 +39,7 @@ func main() {
 	defer sentry.Flush(2 * time.Second)
 	defer sentry.Recover()
 
-	db, err = sql.Open("postgres", os.Getenv("DB_URL"))
+	db, err = sql.Open("sqlite3", os.Getenv("DB_URL"))
 
 	if err != nil {
 		log.Fatal(err)
