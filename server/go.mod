@@ -6,7 +6,6 @@ require (
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.5.0
-	github.com/lib/pq v1.3.0
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.6
 	github.com/newrelic/go-agent/v3 v3.9.0
