@@ -33,9 +33,9 @@ func GetWeeksWorstTimes(daysOfTheWeek []time.Time) []int32 {
 
 	query := `
 SELECT max(time_in_seconds), date FROM times
-	WHERE date >= $1 AND date <= $2
-	GROUP BY date
-	ORDER BY date ASC
+	WHERE date >= date($1) AND date <= date($2)
+	GROUP BY date(date)
+	ORDER BY date(date) ASC
 	`
 
 	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
