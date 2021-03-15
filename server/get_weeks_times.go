@@ -24,7 +24,7 @@ func getWeeksInfo(day time.Time) weeksInfo {
 select username, time_in_seconds, date from
 	(select * from users) as A
 	left join
-	(select * from times where date >= $1 AND date <= $2) as B
+	(select * from times where date >= date(?) AND date <= date(?)) as B
 	on A.id = B.user_id
 	order by A.id, B.date;
 	`
@@ -48,6 +48,7 @@ select username, time_in_seconds, date from
 		)
 
 		err = rows.Scan(&user, &timeInSeconds, &date)
+
 		if err != nil {
 			log.Fatal(err)
 		}

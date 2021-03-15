@@ -122,7 +122,7 @@ func scrape(db *sql.DB) error {
 				return err
 			}
 
-			row := db.QueryRow("SELECT EXISTS (SELECT id FROM times WHERE user_id = $1 AND date = $2)", id, date)
+			row := db.QueryRow("SELECT EXISTS (SELECT id FROM times WHERE user_id = $1 AND date = date($2))", id, date)
 
 			var doesExist bool
 
@@ -132,7 +132,7 @@ func scrape(db *sql.DB) error {
 			}
 
 			if !doesExist {
-				_, err := db.Exec("INSERT INTO times (user_id, time_in_seconds, date) VALUES ($1, $2, $3)", id, solveTime, date)
+				_, err := db.Exec("INSERT INTO times (user_id, time_in_seconds, date) VALUES ($1, $2, date($3))", id, solveTime, date)
 				if err != nil {
 					return err
 				}
