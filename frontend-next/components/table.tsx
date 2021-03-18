@@ -15,9 +15,10 @@ interface RowProps {
   Username: string;
   WeeksTimes: Array<number>;
   WeeksAverage: number;
+  Elo: number;
 }
 
-function Row({ Username, WeeksTimes, WeeksAverage }: RowProps) {
+function Row({ Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
   return (
     <tr css={styles.tableRow}>
       <td>{Username}</td>
@@ -29,6 +30,8 @@ function Row({ Username, WeeksTimes, WeeksAverage }: RowProps) {
       ))}
 
       <td>{secondsToMinutes(WeeksAverage)}</td>
+
+      <td>{Elo.toFixed(0)}</td>
     </tr>
   );
 }
@@ -60,6 +63,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
 
   let newUsers = users
     .filter((user) => !removedUsers.includes(user.Username))
+    .filter((user) => user.WeeksTimes.length > 0)
     .map((user) => {
       let newObj: typeof user & { [key: number]: number } = { ...user };
       for (let i = 0; i < user.WeeksTimes.length; ++i) {
@@ -103,6 +107,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
     { title: "Name", key: "Username" },
     ...daysOfTheWeek.map((date, i) => ({ title: date, key: i })),
     { title: "Weekly Average", key: "WeeksAverage" },
+    { title: "ELO", key: "Elo" },
   ];
 
   return (

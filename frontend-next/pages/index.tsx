@@ -15,6 +15,7 @@ export const UserType = t.type({
   Username: t.string,
   WeeksTimes: t.array(t.number),
   WeeksAverage: t.number,
+  Elo: t.number,
 });
 
 const ResponseType = t.type({
