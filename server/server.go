@@ -61,6 +61,16 @@ func main() {
 		}
 	}()
 
+	go func() {
+		for {
+			err := setElosInDb(db)
+			if err != nil {
+				sentry.CaptureException(err)
+			}
+			time.Sleep(10 * time.Second)
+		}
+	}()
+
 	r := gin.Default()
 
 	r.Use(cors.Default())
@@ -78,6 +88,7 @@ func main() {
 	r.GET("/all_users", func(c *gin.Context) {
 		c.JSON(http.StatusOK, AllUsersHandler())
 	})
+
 	r.GET("/week/:year/:month/:day", func(c *gin.Context) {
 		year, err := strconv.Atoi(c.Param("year"))
 		if err != nil {

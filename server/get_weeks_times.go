@@ -10,6 +10,7 @@ type userInfo struct {
 	Username     string
 	WeeksTimes   []int32
 	WeeksAverage int32
+	Elo          float64
 }
 
 type weeksInfo struct {
@@ -54,7 +55,7 @@ select username, time_in_seconds, date from
 		}
 
 		if user != currentUser {
-			result = append(result, userInfo{user, []int32{}, 0})
+			result = append(result, userInfo{user, []int32{}, 0, 1000.0})
 			currentUser = user
 			dateIndex = 0
 		}
@@ -78,11 +79,26 @@ select username, time_in_seconds, date from
 		result[i].WeeksAverage = WeeklyAverage(result[i].WeeksTimes, weeksWorstTimes)
 	}
 
+	for i := 0; i < len(result); i++ {
+		row := db.QueryRow("SELECT elo FROM users WHERE username = ?", result[i].Username)
+
+		var elo sql.NullFloat64
+
+		err = row.Scan(&elo)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if elo.Valid {
+			result[i].Elo = elo.Float64
+		}
+	}
+
 	daysOfTheWeekStrings := []string{}
 
 	for _, day := range daysOfTheWeek {
 		daysOfTheWeekStrings = append(daysOfTheWeekStrings, day.Format(time.RFC1123Z))
-
 	}
 
 	return weeksInfo{Users: result, DaysOfTheWeek: daysOfTheWeekStrings}
