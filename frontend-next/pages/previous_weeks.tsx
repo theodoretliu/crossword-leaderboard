@@ -32,6 +32,7 @@ export default function PreviousWeeks() {
       <div css={styles.linkContainer}>
         {weekStarts.map((weekStart) => (
           <Link
+            key={weekStart.toString()}
             href={`/week/${weekStart.year()}/${weekStart.month()}/${weekStart.date()}`}
             passHref
           >

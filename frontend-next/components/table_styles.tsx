@@ -32,7 +32,7 @@ export const arrow = css`
 `;
 
 export const tbody = css`
-  tr:nth-child(even) {
+  tr:nth-of-type(even) {
     background-color: #e0e0e0;
   }
 `;
