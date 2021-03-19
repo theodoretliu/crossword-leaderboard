@@ -10,7 +10,7 @@ import { ResponseType } from "pages/index";
 import * as t from "io-ts";
 import { Table } from "components/table";
 
-import * as styles from "./[day]_styles";
+import * as styles from "components/[day]_styles";
 
 dayjs.extend(utc);
 
