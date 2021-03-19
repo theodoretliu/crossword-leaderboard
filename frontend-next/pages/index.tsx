@@ -8,6 +8,7 @@ import utc from "dayjs/plugin/utc";
 import useSWR from "swr";
 import * as t from "io-ts";
 import { Table } from "components/table";
+import { datesToFormat } from "utils";
 
 dayjs.extend(utc);
 
@@ -18,7 +19,7 @@ export const UserType = t.type({
   Elo: t.number,
 });
 
-const ResponseType = t.type({
+export const ResponseType = t.type({
   Users: t.array(UserType),
   DaysOfTheWeek: t.array(t.string),
 });
@@ -56,9 +57,7 @@ function App({ initialData }: { initialData: t.TypeOf<typeof ResponseType> }) {
     return <Header />;
   }
 
-  let dates = data.DaysOfTheWeek.map((x) =>
-    dayjs(x).utc().format("dddd, MMMM D, YYYY")
-  );
+  let dates = datesToFormat(data.DaysOfTheWeek);
 
   return (
     <React.Fragment>

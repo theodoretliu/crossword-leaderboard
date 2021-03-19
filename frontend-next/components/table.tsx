@@ -2,7 +2,7 @@
 import { jsx } from "@emotion/core";
 import { useState } from "react";
 import * as t from "io-ts";
-import { padRight, secondsToMinutes } from "utils";
+import { datesToFormat, padRight, secondsToMinutes } from "utils";
 import { UserType } from "pages/index";
 import * as styles from "./table_styles";
 
@@ -46,6 +46,8 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
   });
 
   let users = rows.slice();
+
+  let dates = datesToFormat(daysOfTheWeek);
 
   const [removedUsers, _] = useState(() => {
     if (typeof window !== "undefined") {
@@ -105,7 +107,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
     key: keyof t.TypeOf<typeof UserType> | number;
   }> = [
     { title: "Name", key: "Username" },
-    ...daysOfTheWeek.map((date, i) => ({ title: date, key: i })),
+    ...dates.map((date, i) => ({ title: date, key: i })),
     { title: "Weekly Average", key: "WeeksAverage" },
     { title: "ELO", key: "Elo" },
   ];

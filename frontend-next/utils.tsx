@@ -1,3 +1,6 @@
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+
 export const secondsToMinutes = (seconds: number) => {
   const minutes = Math.floor(seconds / 60);
   const secondsRemaining = seconds % 60;
@@ -13,4 +16,8 @@ export function padRight<T>(arr: Array<T>, value: T, length: number): Array<T> {
   }
 
   return newArr;
+}
+
+export function datesToFormat(dates: Array<string>) {
+  return dates.map((x) => dayjs(x).utc().format("dddd, MMMM D, YYYY"));
 }
