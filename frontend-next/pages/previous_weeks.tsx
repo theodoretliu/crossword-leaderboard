@@ -33,7 +33,9 @@ export default function PreviousWeeks() {
         {weekStarts.map((weekStart) => (
           <Link
             key={weekStart.toString()}
-            href={`/week/${weekStart.year()}/${weekStart.month()}/${weekStart.date()}`}
+            href={`/week/${weekStart.year()}/${
+              weekStart.month() + 1
+            }/${weekStart.date()}`}
             passHref
           >
             <a css={styles.link}>{weekStart.format("MMMM D, YYYY")}</a>

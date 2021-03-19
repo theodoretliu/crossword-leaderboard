@@ -10,8 +10,8 @@ var k float64 = 30
 
 var ops int64 = 0
 
-func getAllDates(db *sql.DB) ([]time.Time, error) {
-	rows, err := db.Query("SELECT DISTINCT(date) FROM times ORDER BY date;")
+func getAllDatesBeforeDate(db *sql.DB, date time.Time) ([]time.Time, error) {
+	rows, err := db.Query("SELECT DISTINCT(date) FROM times WHERE date <= date(?) ORDER BY date;", date)
 
 	if err != nil {
 		return []time.Time{}, err
@@ -96,8 +96,8 @@ func getAllUsernames(db *sql.DB) ([]string, error) {
 	return ids, nil
 }
 
-func computeElo(db *sql.DB) (map[string]float64, error) {
-	allDates, err := getAllDates(db)
+func computeElo(db *sql.DB, date time.Time) (map[string]float64, error) {
+	allDates, err := getAllDatesBeforeDate(db, date)
 
 	if err != nil {
 		return nil, err
@@ -154,7 +154,9 @@ func computeElo(db *sql.DB) (map[string]float64, error) {
 }
 
 func setElosInDb(db *sql.DB) error {
-	elos, err := computeElo(db)
+	today := time.Now().UTC().Truncate(24 * time.Hour)
+
+	elos, err := computeElo(db, today)
 
 	if err != nil {
 		return err

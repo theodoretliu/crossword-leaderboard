@@ -5,5 +5,5 @@ import (
 )
 
 func NewIndexHandler() weeksInfo {
-	return getWeeksInfo(time.Now().UTC())
+	return getWeeksInfo(time.Now().UTC(), false)
 }

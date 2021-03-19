@@ -18,16 +18,16 @@ type weeksInfo struct {
 	DaysOfTheWeek []string
 }
 
-func getWeeksInfo(day time.Time) weeksInfo {
+func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	firstDayOfWeek := getFirstDayOfWeek(day)
 	daysOfTheWeek := getDaysOfTheWeek(firstDayOfWeek)
 	query := `
-select username, time_in_seconds, date from
-	(select * from users) as A
-	left join
-	(select * from times where date >= date(?) AND date <= date(?)) as B
-	on A.id = B.user_id
-	order by A.id, B.date;
+		select username, time_in_seconds, date from
+			(select * from users) as A
+			left join
+			(select * from times where date >= date(?) AND date <= date(?)) as B
+			on A.id = B.user_id
+			order by A.id, B.date;
 	`
 
 	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
@@ -79,19 +79,30 @@ select username, time_in_seconds, date from
 		result[i].WeeksAverage = WeeklyAverage(result[i].WeeksTimes, weeksWorstTimes)
 	}
 
-	for i := 0; i < len(result); i++ {
-		row := db.QueryRow("SELECT elo FROM users WHERE username = ?", result[i].Username)
+	if !shouldComputeElo {
+		for i := 0; i < len(result); i++ {
+			row := db.QueryRow("SELECT elo FROM users WHERE username = ?", result[i].Username)
 
-		var elo sql.NullFloat64
+			var elo sql.NullFloat64
 
-		err = row.Scan(&elo)
+			err = row.Scan(&elo)
 
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			if elo.Valid {
+				result[i].Elo = elo.Float64
+			}
+		}
+	} else {
+		elos, err := computeElo(db, daysOfTheWeek[len(daysOfTheWeek)-1])
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		if elo.Valid {
-			result[i].Elo = elo.Float64
+		for i := 0; i < len(result); i++ {
+			result[i].Elo = elos[result[i].Username]
 		}
 	}
 
