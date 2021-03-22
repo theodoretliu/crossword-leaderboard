@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"math"
 	"time"
 )
@@ -10,7 +9,7 @@ var k float64 = 30
 
 var ops int64 = 0
 
-func getAllDatesBeforeDate(db *sql.DB, date time.Time) ([]time.Time, error) {
+func getAllDatesBeforeDate(date time.Time) ([]time.Time, error) {
 	rows, err := db.Query("SELECT DISTINCT(date) FROM times WHERE date <= date(?) ORDER BY date;", date)
 
 	if err != nil {
@@ -42,12 +41,13 @@ func eloUpdate(p1rating, p2rating, p1actual, p2actual float64) (float64, float64
 }
 
 type userAndTime struct {
+	userId        int64
 	username      string
-	timeInSeconds int
+	timeInSeconds int64
 }
 
-func getUsersForDate(db *sql.DB, date time.Time) ([]userAndTime, error) {
-	rows, err := db.Query(`SELECT users.username, times.time_in_seconds
+func getUsersForDate(date time.Time) ([]userAndTime, error) {
+	rows, err := db.Query(`SELECT users.id, users.username, times.time_in_seconds
 		FROM times JOIN users ON users.id = times.user_id
 		WHERE times.date = date(?)
 		ORDER BY times.time_in_seconds ASC`, date)
@@ -61,7 +61,7 @@ func getUsersForDate(db *sql.DB, date time.Time) ([]userAndTime, error) {
 	for rows.Next() {
 		var info userAndTime
 
-		err = rows.Scan(&info.username, &info.timeInSeconds)
+		err = rows.Scan(&info.userId, &info.username, &info.timeInSeconds)
 
 		if err != nil {
 			return []userAndTime{}, err
@@ -73,53 +73,53 @@ func getUsersForDate(db *sql.DB, date time.Time) ([]userAndTime, error) {
 	return out, nil
 }
 
-func getAllUsernames(db *sql.DB) ([]string, error) {
-	rows, err := db.Query("SELECT username FROM users")
+func getAllUserIds() ([]int64, error) {
+	rows, err := db.Query("SELECT DISTINCT id FROM users")
 
 	if err != nil {
 		return nil, err
 	}
 
-	ids := []string{}
+	ids := []int64{}
 	for rows.Next() {
-		var username string
+		var userId int64
 
-		err = rows.Scan(&username)
+		err = rows.Scan(&userId)
 
 		if err != nil {
 			return nil, err
 		}
 
-		ids = append(ids, username)
+		ids = append(ids, userId)
 	}
 
 	return ids, nil
 }
 
-func computeElo(db *sql.DB, date time.Time) (map[string]float64, error) {
-	allDates, err := getAllDatesBeforeDate(db, date)
+func computeElo() error {
+	allDates, err := getAllDatesBeforeDate(time.Now().UTC().Truncate(24 * time.Hour))
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	allUsernames, err := getAllUsernames(db)
+	allUserIds, err := getAllUserIds()
 
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	usernameElos := map[string]float64{}
+	userIdElos := map[int64]float64{}
 
-	for _, ids := range allUsernames {
-		usernameElos[ids] = 1000.0
+	for _, ids := range allUserIds {
+		userIdElos[ids] = 1000.0
 	}
 
 	for _, date := range allDates {
-		arr, err := getUsersForDate(db, date)
+		arr, err := getUsersForDate(date)
 
 		if err != nil {
-			return nil, err
+			return err
 		}
 
 		for i := 0; i < len(arr); i++ {
@@ -141,34 +141,64 @@ func computeElo(db *sql.DB, date time.Time) (map[string]float64, error) {
 					opponentActual = 0.5
 				}
 
-				userUpdate, opponentUpdate := eloUpdate(usernameElos[user.username], usernameElos[opponent.username], userActual, opponentActual)
+				userUpdate, opponentUpdate := eloUpdate(userIdElos[user.userId], userIdElos[opponent.userId], userActual, opponentActual)
 
-				usernameElos[user.username] = userUpdate
-				usernameElos[opponent.username] = opponentUpdate
+				userIdElos[user.userId] = userUpdate
+				userIdElos[opponent.userId] = opponentUpdate
 			}
-
 		}
-	}
 
-	return usernameElos, nil
-}
+		for userId, elo := range userIdElos {
+			_, err = db.Exec(`INSERT INTO elos (user_id, elo, date)
+				VALUES ($1, $2, date($3))
+				ON CONFLICT (user_id, date)
+					DO UPDATE SET elo = $2;`, userId, elo, date)
 
-func setElosInDb(db *sql.DB) error {
-	today := time.Now().UTC().Truncate(24 * time.Hour)
-
-	elos, err := computeElo(db, today)
-
-	if err != nil {
-		return err
-	}
-
-	for username, elo := range elos {
-		_, err = db.Exec("UPDATE users SET elo = ? WHERE username = ?", elo, username)
-
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+func setElosInDb() error {
+	return computeElo()
+}
+
+func getEloForUserIdDate(userId int64, date time.Time) (float64, error) {
+	row := db.QueryRow(`SELECT elo FROM elos
+		WHERE user_id = ? AND date <= date(?)
+		ORDER BY date DESC
+		LIMIT 1`, userId, date)
+
+	var elo float64
+
+	err := row.Scan(&elo)
+	if err != nil {
+		return 0.0, err
+	}
+
+	return elo, nil
+}
+
+func getElosForDate(date time.Time) (map[int64]float64, error) {
+	allUserIds, err := getAllUserIds()
+	if err != nil {
+		return nil, err
+	}
+
+	elos := map[int64]float64{}
+
+	for _, userId := range allUserIds {
+		elo, err := getEloForUserIdDate(userId, date)
+		if err != nil {
+			return nil, err
+		}
+
+		elos[userId] = elo
+	}
+
+	return elos, nil
 }

@@ -20,12 +20,6 @@ var db *sql.DB
 
 const defaultPort = "8080"
 
-func handlerToGinHandler(h http.Handler) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		h.ServeHTTP(c.Writer, c.Request)
-	}
-}
-
 func main() {
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv("DSN"),
@@ -63,7 +57,7 @@ func main() {
 
 	go func() {
 		for {
-			err := setElosInDb(db)
+			err := setElosInDb()
 			if err != nil {
 				sentry.CaptureException(err)
 			}

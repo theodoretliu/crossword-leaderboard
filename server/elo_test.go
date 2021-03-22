@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"testing"
+	"time"
 )
 
 func TestAllDates(t *testing.T) {
@@ -23,7 +24,7 @@ func TestComputeElo(t *testing.T) {
 		panic("hello")
 	}
 
-	computeElo(db)
+	computeElo(time.Now())
 }
 
 // func TestEloUpdate(t *testing.T) {
