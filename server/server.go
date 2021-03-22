@@ -84,7 +84,7 @@ func main() {
 	})
 
 	r.GET("/users/:userId", func(c *gin.Context) {
-		userId, err := strconv.Atoi(c.Param("userId"))
+		userId, err := strconv.ParseInt(c.Param("userId"), 10, 64)
 		if err != nil {
 			panic(err)
 		}

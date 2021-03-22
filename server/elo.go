@@ -170,7 +170,7 @@ func setElosInDb() error {
 func getEloForUserIdDate(userId int64, date time.Time) (float64, error) {
 	row := db.QueryRow(`SELECT elo FROM elos
 		WHERE user_id = ? AND date <= date(?)
-		ORDER BY date DESC
+		ORDER BY date(date) DESC
 		LIMIT 1`, userId, date)
 
 	var elo float64
@@ -181,6 +181,28 @@ func getEloForUserIdDate(userId int64, date time.Time) (float64, error) {
 	}
 
 	return elo, nil
+}
+
+func getEloHistory(userId int64) ([]dateElo, error) {
+	rows, err := db.Query(`SELECT date, elo FROM elos WHERE user_id = ? ORDER BY date ASC;`, userId)
+	if err != nil {
+		return nil, err
+	}
+
+	dateElos := []dateElo{}
+
+	for rows.Next() {
+		scan := dateElo{}
+
+		err = rows.Scan(&scan.Date, &scan.Elo)
+		if err != nil {
+			return nil, err
+		}
+
+		dateElos = append(dateElos, scan)
+	}
+
+	return dateElos, nil
 }
 
 func getElosForDate(date time.Time) (map[int64]float64, error) {

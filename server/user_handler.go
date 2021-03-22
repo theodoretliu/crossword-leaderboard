@@ -11,14 +11,20 @@ type stats struct {
 	NumCompleted int64
 }
 
+type dateElo struct {
+	Date time.Time
+	Elo  float64
+}
+
 type UserResponse struct {
 	Username      string
 	MiniStats     stats
 	SaturdayStats stats
 	OverallStats  stats
+	EloHistory    []dateElo
 }
 
-func UserHandler(userId int) UserResponse {
+func UserHandler(userId int64) UserResponse {
 	row := db.QueryRow(`SELECT username FROM users WHERE id = ?`, userId)
 
 	var username string
@@ -27,7 +33,7 @@ func UserHandler(userId int) UserResponse {
 		panic(err)
 	}
 
-	rows, err := db.Query(`SELECT time_in_seconds, date FROM times WHERE user_id = ? ORDER BY date ASC;`, userId)
+	rows, err := db.Query(`SELECT time_in_seconds, date FROM times WHERE user_id = ? ORDER BY date(date) ASC;`, userId)
 	if err != nil {
 		panic(err)
 	}
@@ -115,10 +121,16 @@ func UserHandler(userId int) UserResponse {
 	overallStats.Best = min(miniStats.Best, saturdayStats.Best)
 	overallStats.Worst = max(miniStats.Worst, saturdayStats.Worst)
 
+	eloHistory, err := getEloHistory(userId)
+	if err != nil {
+		panic(err)
+	}
+
 	return UserResponse{
 		Username:      username,
 		MiniStats:     miniStats,
 		SaturdayStats: saturdayStats,
 		OverallStats:  overallStats,
+		EloHistory:    eloHistory,
 	}
 }
