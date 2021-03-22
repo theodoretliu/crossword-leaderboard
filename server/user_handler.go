@@ -72,11 +72,12 @@ func UserHandler(userId int64) UserResponse {
 			previousDay = new(time.Time)
 			*previousDay = date
 		} else {
-			longestStreak = max(longestStreak, currentStreak)
 			if date.Sub(*previousDay) > 24*time.Hour {
+				longestStreak = max(longestStreak, currentStreak)
 				currentStreak = 1
 			} else {
 				currentStreak++
+				longestStreak = max(longestStreak, currentStreak)
 			}
 			*previousDay = date
 		}
