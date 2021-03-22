@@ -22,6 +22,8 @@ type UserResponse struct {
 	SaturdayStats stats
 	OverallStats  stats
 	EloHistory    []dateElo
+	LongestStreak int64
+	CurrentStreak int64
 }
 
 func UserHandler(userId int64) UserResponse {
@@ -37,6 +39,10 @@ func UserHandler(userId int64) UserResponse {
 	if err != nil {
 		panic(err)
 	}
+
+	longestStreak := int64(0)
+	currentStreak := int64(0)
+	var previousDay *time.Time
 
 	totalSaturdayTimes := int64(0)
 	var bestSaturdayTime *int64
@@ -60,6 +66,22 @@ func UserHandler(userId int64) UserResponse {
 
 		date = date.UTC()
 
+		if previousDay == nil {
+			currentStreak = 1
+			longestStreak = 1
+			previousDay = new(time.Time)
+			*previousDay = date
+		} else {
+			longestStreak = max(longestStreak, currentStreak)
+			if date.Sub(*previousDay) > 24*time.Hour {
+				currentStreak = 1
+			} else {
+				currentStreak++
+			}
+			*previousDay = date
+		}
+
+		// collecting statistics based on the day the of week
 		if date.Weekday() == time.Saturday {
 			totalSaturdayTimes += timeInSeconds
 			saturdayCount++
@@ -126,11 +148,17 @@ func UserHandler(userId int64) UserResponse {
 		panic(err)
 	}
 
+	if previousDay == nil || *previousDay != time.Now().UTC().Truncate(24*time.Hour) {
+		currentStreak = 0
+	}
+
 	return UserResponse{
 		Username:      username,
 		MiniStats:     miniStats,
 		SaturdayStats: saturdayStats,
 		OverallStats:  overallStats,
 		EloHistory:    eloHistory,
+		LongestStreak: longestStreak,
+		CurrentStreak: currentStreak,
 	}
 }
