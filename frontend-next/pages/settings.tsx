@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Header } from "components/header";
 import Head from "next/head";
 import useSWR from "swr";
+import { H2 } from "components/h2";
 import * as t from "io-ts";
 import { API_URL } from "api";
 
@@ -123,6 +124,7 @@ function Settings({ initialData }: SettingsProps) {
         <title>Mini Crossword Leaderboard: Settings</title>
       </Head>
       <Header />
+      <H2>Settings</H2>
       <div
         css={css`
           display: grid;

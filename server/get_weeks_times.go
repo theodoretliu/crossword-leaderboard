@@ -6,6 +6,7 @@ import (
 )
 
 type userInfo struct {
+	UserId       int64
 	Username     string
 	WeeksTimes   []int32
 	WeeksAverage int32
@@ -21,7 +22,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	firstDayOfWeek := getFirstDayOfWeek(day)
 	daysOfTheWeek := getDaysOfTheWeek(firstDayOfWeek)
 	query := `
-		select username, time_in_seconds, date from
+		select A.id, username, time_in_seconds, date from
 			(select * from users) as A
 			left join
 			(select * from times where date >= date(?) AND date <= date(?)) as B
@@ -42,19 +43,20 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 
 	for rows.Next() {
 		var (
+			userId        int64
 			user          string
 			timeInSeconds sql.NullInt32
 			date          sql.NullTime
 		)
 
-		err = rows.Scan(&user, &timeInSeconds, &date)
+		err = rows.Scan(&userId, &user, &timeInSeconds, &date)
 
 		if err != nil {
 			panic(err)
 		}
 
 		if user != currentUser {
-			result = append(result, userInfo{user, []int32{}, 0, 1000.0})
+			result = append(result, userInfo{userId, user, []int32{}, 0, 1000.0})
 			currentUser = user
 			dateIndex = 0
 		}

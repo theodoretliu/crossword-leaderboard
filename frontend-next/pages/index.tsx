@@ -13,6 +13,7 @@ import { datesToFormat } from "utils";
 dayjs.extend(utc);
 
 export const UserType = t.type({
+  UserId: t.number,
   Username: t.string,
   WeeksTimes: t.array(t.number),
   WeeksAverage: t.number,

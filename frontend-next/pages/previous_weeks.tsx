@@ -2,6 +2,7 @@
 import { jsx } from "@emotion/core";
 import { useMemo } from "react";
 import { Header } from "components/header";
+import { H2 } from "components/h2";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import Link from "next/link";
@@ -27,7 +28,7 @@ export default function PreviousWeeks() {
   return (
     <div>
       <Header />
-      <h2 css={styles.h2}>Previous Weeks</h2>
+      <H2>Previous Weeks</H2>
 
       <div css={styles.linkContainer}>
         {weekStarts.map((weekStart) => (

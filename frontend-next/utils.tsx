@@ -1,9 +1,26 @@
 import dayjs from "dayjs";
-import utc from "dayjs/plugin/utc";
 
-export const secondsToMinutes = (seconds: number) => {
-  const minutes = Math.floor(seconds / 60);
-  const secondsRemaining = seconds % 60;
+export const secondsToMinutes = (
+  seconds: number,
+  showDecimals: boolean = false
+) => {
+  let secondsStr: string;
+  if (showDecimals) {
+    secondsStr = seconds.toFixed(2);
+    const decimals = secondsStr.slice(-3);
+    const totalSeconds = parseInt(secondsStr.slice(0, -3));
+    const minutes = Math.floor(totalSeconds / 60);
+    const secondsRemaining = totalSeconds % 60;
+
+    return `${minutes}:${secondsRemaining
+      .toString()
+      .padStart(2, "0")}${decimals}`;
+  }
+
+  secondsStr = seconds.toFixed(0);
+  const totalSeconds = parseInt(secondsStr);
+  const minutes = Math.floor(totalSeconds / 60);
+  const secondsRemaining = totalSeconds % 60;
 
   return `${minutes}:${secondsRemaining.toString().padStart(2, "0")}`;
 };

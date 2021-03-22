@@ -9,6 +9,7 @@ import { API_URL } from "api";
 import { ResponseType } from "pages/index";
 import * as t from "io-ts";
 import { Table } from "components/table";
+import { H2 } from "components/h2";
 
 import * as styles from "components/[day]_styles";
 
@@ -54,9 +55,7 @@ export default function Week({
   return (
     <div>
       <Header />
-      <h2 css={styles.weekTitle}>
-        Week of {date.format("dddd, MMMM D, YYYY")}
-      </h2>
+      <H2>Week of {date.format("dddd, MMMM D, YYYY")}</H2>
       <Table
         daysOfTheWeek={initialData.DaysOfTheWeek}
         rows={initialData.Users}

@@ -3,6 +3,7 @@ import { jsx } from "@emotion/core";
 import { useState } from "react";
 import * as t from "io-ts";
 import { datesToFormat, padRight, secondsToMinutes } from "utils";
+import Link from "next/link";
 import { UserType } from "pages/index";
 import * as styles from "./table_styles";
 
@@ -12,16 +13,21 @@ interface TableProps {
 }
 
 interface RowProps {
+  UserId: number;
   Username: string;
   WeeksTimes: Array<number>;
   WeeksAverage: number;
   Elo: number;
 }
 
-function Row({ Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
+function Row({ UserId, Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
   return (
     <tr css={styles.tableRow}>
-      <td>{Username}</td>
+      <td>
+        <Link href={`/users/${UserId}/`}>
+          <a>{Username}</a>
+        </Link>
+      </td>
 
       {padRight(WeeksTimes, -1, 7).map((weeksTime, i) => (
         <td key={Username + weeksTime + i}>
