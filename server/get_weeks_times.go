@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"log"
 	"time"
 )
 
@@ -33,7 +32,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	result := []userInfo{}
@@ -51,7 +50,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 		err = rows.Scan(&user, &timeInSeconds, &date)
 
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		if user != currentUser {
@@ -88,7 +87,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 			err = row.Scan(&elo)
 
 			if err != nil {
-				log.Fatal(err)
+				panic(err)
 			}
 
 			if elo.Valid {
@@ -98,7 +97,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	} else {
 		elos, err := computeElo(db, daysOfTheWeek[len(daysOfTheWeek)-1])
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		for i := 0; i < len(result); i++ {

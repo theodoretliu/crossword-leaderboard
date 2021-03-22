@@ -89,20 +89,29 @@ func main() {
 		c.JSON(http.StatusOK, AllUsersHandler())
 	})
 
+	r.GET("/users/:userId", func(c *gin.Context) {
+		userId, err := strconv.Atoi(c.Param("userId"))
+		if err != nil {
+			panic(err)
+		}
+
+		c.JSON(http.StatusOK, UserHandler(userId))
+	})
+
 	r.GET("/week/:year/:month/:day", func(c *gin.Context) {
 		year, err := strconv.Atoi(c.Param("year"))
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		month, err := strconv.Atoi(c.Param("month"))
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		day, err := strconv.Atoi(c.Param("day"))
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		c.JSON(http.StatusOK, WeekTimesHandler(year, month, day))

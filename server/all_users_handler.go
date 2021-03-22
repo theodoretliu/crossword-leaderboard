@@ -1,7 +1,5 @@
 package main
 
-import "log"
-
 type AllUsersResponse struct {
 	Users []string
 }
@@ -12,7 +10,7 @@ func AllUsersHandler() AllUsersResponse {
 	res, err := db.Query(query)
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	names := []string{}
@@ -23,7 +21,7 @@ func AllUsersHandler() AllUsersResponse {
 		err = res.Scan(&name)
 
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		names = append(names, name)

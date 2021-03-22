@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"math"
 	"time"
 )
@@ -41,7 +40,7 @@ SELECT max(time_in_seconds), date FROM times
 	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
 
 	if err != nil {
-		log.Fatal(err)
+		panic(err)
 	}
 
 	i := 0
@@ -53,7 +52,7 @@ SELECT max(time_in_seconds), date FROM times
 		err = rows.Scan(&worstTime, &date)
 
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 
 		for date.UTC() != daysOfTheWeek[i] {
@@ -68,8 +67,15 @@ SELECT max(time_in_seconds), date FROM times
 	return worstTimes
 }
 
-func max(x, y int) int {
+func max(x, y int64) int64 {
 	if x > y {
+		return x
+	}
+	return y
+}
+
+func min(x, y int64) int64 {
+	if x < y {
 		return x
 	}
 	return y
