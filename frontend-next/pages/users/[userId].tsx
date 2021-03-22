@@ -17,7 +17,18 @@ import {
   TableHead,
   TableRow,
 } from "@material-ui/core";
-import { secondsToMinutes } from "utils";
+import { dateToFormat, secondsToMinutes } from "utils";
+import * as styles from "components/[userId]_styles";
+
+import {
+  ResponsiveContainer,
+  LineChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Line,
+  Label,
+} from "recharts";
 
 const StatsType = t.type({
   Average: t.number,
@@ -31,6 +42,16 @@ const ResponseType = t.type({
   MiniStats: StatsType,
   SaturdayStats: StatsType,
   OverallStats: StatsType,
+  LongestStreak: t.number,
+  CurrentStreak: t.number,
+  EloHistory: t.array(
+    t.type({
+      Date: t.string,
+      Elo: t.number,
+    })
+  ),
+  PeakElo: t.number,
+  CurrentElo: t.number,
 });
 
 dayjs.extend(utc);
@@ -77,7 +98,21 @@ export default function User({
   return (
     <div>
       <Header />
-      <H2>{data.Username}</H2>
+      <H2>Statistics for {data.Username}</H2>
+
+      <div css={styles.streak}>
+        <h3>Current Streak: {data.CurrentStreak}</h3>
+
+        <h3>Longest Streak: {data.LongestStreak}</h3>
+      </div>
+
+      <div css={styles.streak}>
+        <h3>Current ELO: {data.CurrentElo.toFixed(2)}</h3>
+
+        <h3>Peak ELO: {data.PeakElo.toFixed(2)}</h3>
+      </div>
+
+      <H2>Cumulative Statistics</H2>
 
       <Table>
         <TableHead>
@@ -139,6 +174,63 @@ export default function User({
           </TableRow>
         </TableBody>
       </Table>
+
+      <div css={styles.historyTitle}>
+        <H2>Historical Statistics</H2>
+
+        <H2>ELO History</H2>
+        <ResponsiveContainer aspect={16 / 9} width={800}>
+          <LineChart
+            width={730}
+            height={250}
+            margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+            data={data.EloHistory.slice()
+              .reverse()
+              .map(({ Date, Elo }) => ({
+                Date: dayjs(Date).utc().unix(),
+                Elo,
+              }))}
+          >
+            <XAxis
+              tick={false}
+              domain={["auto", "auto"]}
+              type="number"
+              dataKey="Date"
+              label={{ value: "Date", position: "insideBottom" }}
+            />
+            <YAxis allowDecimals={false} domain={["auto", "auto"]} />
+
+            <Tooltip
+              labelFormatter={(value) =>
+                dateToFormat(dayjs.unix(value).utc().toString())
+              }
+              formatter={(elo: number) => [elo.toFixed(2), "ELO"]}
+            />
+
+            <Line dot={false} type="monotone" dataKey="Elo" />
+          </LineChart>
+        </ResponsiveContainer>
+
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+
+              <TableCell align="right">ELO</TableCell>
+            </TableRow>
+          </TableHead>
+
+          <TableBody>
+            {data.EloHistory.map(({ Date, Elo }) => (
+              <TableRow key={Date + Elo.toString()}>
+                <TableCell>{dateToFormat(Date)}</TableCell>
+
+                <TableCell align="right">{Elo.toFixed(2)}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

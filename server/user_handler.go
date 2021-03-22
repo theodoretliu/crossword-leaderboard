@@ -24,6 +24,8 @@ type UserResponse struct {
 	EloHistory    []dateElo
 	LongestStreak int64
 	CurrentStreak int64
+	PeakElo       float64
+	CurrentElo    float64
 }
 
 func UserHandler(userId int64) UserResponse {
@@ -153,6 +155,16 @@ func UserHandler(userId int64) UserResponse {
 		currentStreak = 0
 	}
 
+	peakElo, err := getPeakElo(userId)
+	if err != nil {
+		panic(err)
+	}
+
+	currentElo, err := getCurrentElo(userId)
+	if err != nil {
+		panic(err)
+	}
+
 	return UserResponse{
 		Username:      username,
 		MiniStats:     miniStats,
@@ -161,5 +173,7 @@ func UserHandler(userId int64) UserResponse {
 		EloHistory:    eloHistory,
 		LongestStreak: longestStreak,
 		CurrentStreak: currentStreak,
+		PeakElo:       peakElo,
+		CurrentElo:    currentElo,
 	}
 }

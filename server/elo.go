@@ -184,7 +184,7 @@ func getEloForUserIdDate(userId int64, date time.Time) (float64, error) {
 }
 
 func getEloHistory(userId int64) ([]dateElo, error) {
-	rows, err := db.Query(`SELECT date, elo FROM elos WHERE user_id = ? ORDER BY date ASC;`, userId)
+	rows, err := db.Query(`SELECT date, elo FROM elos WHERE user_id = ? ORDER BY date DESC;`, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -223,4 +223,20 @@ func getElosForDate(date time.Time) (map[int64]float64, error) {
 	}
 
 	return elos, nil
+}
+
+func getPeakElo(userId int64) (float64, error) {
+	row := db.QueryRow(`SELECT MAX(elo) FROM elos WHERE user_id = ?`, userId)
+	var maxElo float64
+
+	err := row.Scan(&maxElo)
+	if err != nil {
+		return 0, err
+	}
+
+	return maxElo, nil
+}
+
+func getCurrentElo(userId int64) (float64, error) {
+	return getEloForUserIdDate(userId, time.Now())
 }
