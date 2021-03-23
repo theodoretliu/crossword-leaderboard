@@ -151,10 +151,6 @@ func UserHandler(userId int64) UserResponse {
 		panic(err)
 	}
 
-	if previousDay == nil || *previousDay != time.Now().UTC().Truncate(24*time.Hour) {
-		currentStreak = 0
-	}
-
 	peakElo, err := getPeakElo(userId)
 	if err != nil {
 		panic(err)
