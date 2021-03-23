@@ -122,7 +122,7 @@ func scrape(db *sql.DB) error {
 				return err
 			}
 
-			row := db.QueryRow("SELECT EXISTS (SELECT id FROM times WHERE user_id = $1 AND date = date($2))", id, date)
+			row := db.QueryRow("SELECT EXISTS (SELECT id FROM times WHERE user_id = $1 AND date(date) = date($2))", id, date)
 
 			var doesExist bool
 

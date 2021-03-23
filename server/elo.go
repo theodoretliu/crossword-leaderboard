@@ -10,7 +10,7 @@ var k float64 = 30
 var ops int64 = 0
 
 func getAllDatesBeforeDate(date time.Time) ([]time.Time, error) {
-	rows, err := db.Query("SELECT DISTINCT(date) FROM times WHERE date <= date(?) ORDER BY date;", date)
+	rows, err := db.Query("SELECT DISTINCT(date) FROM times WHERE date(date) <= date(?) ORDER BY date(date);", date)
 
 	if err != nil {
 		return []time.Time{}, err
@@ -49,7 +49,7 @@ type userAndTime struct {
 func getUsersForDate(date time.Time) ([]userAndTime, error) {
 	rows, err := db.Query(`SELECT users.id, users.username, times.time_in_seconds
 		FROM times JOIN users ON users.id = times.user_id
-		WHERE times.date = date(?)
+		WHERE date(times.date) = date(?)
 		ORDER BY times.time_in_seconds ASC`, date)
 
 	if err != nil {
@@ -169,7 +169,7 @@ func setElosInDb() error {
 
 func getEloForUserIdDate(userId int64, date time.Time) (float64, error) {
 	row := db.QueryRow(`SELECT elo FROM elos
-		WHERE user_id = ? AND date <= date(?)
+		WHERE user_id = ? AND date(date) <= date(?)
 		ORDER BY date(date) DESC
 		LIMIT 1`, userId, date)
 
@@ -184,7 +184,7 @@ func getEloForUserIdDate(userId int64, date time.Time) (float64, error) {
 }
 
 func getEloHistory(userId int64) ([]dateElo, error) {
-	rows, err := db.Query(`SELECT date, elo FROM elos WHERE user_id = ? ORDER BY date DESC;`, userId)
+	rows, err := db.Query(`SELECT date, elo FROM elos WHERE user_id = ? ORDER BY date(date) DESC;`, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -206,15 +206,18 @@ func getEloHistory(userId int64) ([]dateElo, error) {
 }
 
 func getElosForDate(date time.Time) (map[int64]float64, error) {
-	allUserIds, err := getAllUserIds()
+	rows, err := db.Query(`SELECT user_id, elo FROM elos WHERE date(date) = date(?);`, date)
 	if err != nil {
 		return nil, err
 	}
 
 	elos := map[int64]float64{}
 
-	for _, userId := range allUserIds {
-		elo, err := getEloForUserIdDate(userId, date)
+	for rows.Next() {
+		var userId int64
+		var elo float64
+
+		err = rows.Scan(&userId, &elo)
 		if err != nil {
 			return nil, err
 		}

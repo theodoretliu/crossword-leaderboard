@@ -10,6 +10,7 @@ import (
 
 	"github.com/getsentry/sentry-go"
 	"github.com/gin-contrib/cors"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/newrelic/go-agent/v3/integrations/nrgin"
@@ -66,6 +67,8 @@ func main() {
 	}()
 
 	r := gin.Default()
+
+	pprof.Register(r)
 
 	r.Use(cors.Default())
 

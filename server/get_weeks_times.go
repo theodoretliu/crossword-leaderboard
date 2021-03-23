@@ -25,9 +25,9 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 		select A.id, username, time_in_seconds, date from
 			(select * from users) as A
 			left join
-			(select * from times where date >= date(?) AND date <= date(?)) as B
+			(select * from times where date(date) >= date(?) AND date(date) <= date(?)) as B
 			on A.id = B.user_id
-			order by A.id, B.date;
+			order by A.id, date(B.date);
 	`
 
 	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
@@ -76,14 +76,20 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 
 	weeksWorstTimes := GetWeeksWorstTimes(daysOfTheWeek)
 
+	elos, err := getElosForDate(day)
+	if err != nil {
+		panic(err)
+	}
+
 	for i := 0; i < len(result); i++ {
 		result[i].WeeksAverage = WeeklyAverage(result[i].WeeksTimes, weeksWorstTimes)
-		elo, err := getEloForUserIdDate(result[i].UserId, day)
-		if err != nil {
-			panic(err)
-		}
 
-		result[i].Elo = elo
+		val, ok := elos[result[i].UserId]
+		if !ok {
+			result[i].Elo = 1000.0
+		} else {
+			result[i].Elo = val
+		}
 	}
 
 	// for
