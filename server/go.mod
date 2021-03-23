@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/getsentry/sentry-go v0.5.1
 	github.com/gin-contrib/cors v1.3.1
-	github.com/gin-contrib/pprof v1.3.0 // indirect
+	github.com/gin-contrib/pprof v1.3.0
 	github.com/gin-gonic/gin v1.6.2
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mattn/go-sqlite3 v1.14.6
