@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -67,6 +68,8 @@ func main() {
 	}()
 
 	r := gin.Default()
+
+	r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
 
 	pprof.Register(r)
 
