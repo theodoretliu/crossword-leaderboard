@@ -206,7 +206,9 @@ func getEloHistory(userId int64) ([]dateElo, error) {
 }
 
 func getElosForDate(date time.Time) (map[int64]float64, error) {
-	rows, err := db.Query(`SELECT user_id, elo FROM elos WHERE date(date) = date(?);`, date)
+	rows, err := db.Query(`SELECT user_id, elo FROM elos WHERE date(date) = (
+		SELECT MAX(date(date)) FROM elos WHERE date(date) <= date(?)
+	);`, date)
 	if err != nil {
 		return nil, err
 	}

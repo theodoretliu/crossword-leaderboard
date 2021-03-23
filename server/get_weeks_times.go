@@ -76,7 +76,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 
 	weeksWorstTimes := GetWeeksWorstTimes(daysOfTheWeek)
 
-	elos, err := getElosForDate(day)
+	elos, err := getElosForDate(daysOfTheWeek[len(daysOfTheWeek)-1])
 	if err != nil {
 		panic(err)
 	}
