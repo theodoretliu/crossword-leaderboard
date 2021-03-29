@@ -120,11 +120,11 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
   const { loading, status, error } = useFeatureFlag("elos");
 
   if (loading) {
-    return "Loading";
+    return <div />;
   }
 
   if (error) {
-    return "Error";
+    return <div>Error</div>;
   }
 
   const headers: Array<{
