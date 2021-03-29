@@ -146,30 +146,48 @@ func UserHandler(userId int64) UserResponse {
 	overallStats.Best = min(miniStats.Best, saturdayStats.Best)
 	overallStats.Worst = max(miniStats.Worst, saturdayStats.Worst)
 
-	eloHistory, err := getEloHistory(userId)
+	eloActive, err := GetFeatureFlag("elos")
+
 	if err != nil {
 		panic(err)
 	}
 
-	peakElo, err := getPeakElo(userId)
-	if err != nil {
-		panic(err)
-	}
+	if eloActive {
+		eloHistory, err := getEloHistory(userId)
+		if err != nil {
+			panic(err)
+		}
 
-	currentElo, err := getCurrentElo(userId)
-	if err != nil {
-		panic(err)
-	}
+		peakElo, err := getPeakElo(userId)
+		if err != nil {
+			panic(err)
+		}
 
-	return UserResponse{
-		Username:      username,
-		MiniStats:     miniStats,
-		SaturdayStats: saturdayStats,
-		OverallStats:  overallStats,
-		EloHistory:    eloHistory,
-		LongestStreak: longestStreak,
-		CurrentStreak: currentStreak,
-		PeakElo:       peakElo,
-		CurrentElo:    currentElo,
+		currentElo, err := getCurrentElo(userId)
+		if err != nil {
+			panic(err)
+		}
+
+		return UserResponse{
+			Username:      username,
+			MiniStats:     miniStats,
+			SaturdayStats: saturdayStats,
+			OverallStats:  overallStats,
+			EloHistory:    eloHistory,
+			LongestStreak: longestStreak,
+			CurrentStreak: currentStreak,
+			PeakElo:       peakElo,
+			CurrentElo:    currentElo,
+		}
+	} else {
+		return UserResponse{
+			Username:      username,
+			MiniStats:     miniStats,
+			SaturdayStats: saturdayStats,
+			OverallStats:  overallStats,
+			LongestStreak: longestStreak,
+			CurrentStreak: currentStreak,
+			EloHistory:    []dateElo{},
+		}
 	}
 }

@@ -29,6 +29,7 @@ import {
   Line,
   Label,
 } from "recharts";
+import { useFeatureFlag } from "hooks/use_feature_flag";
 
 const StatsType = t.type({
   Average: t.number,
@@ -87,11 +88,17 @@ export default function User({
 
   const { error, data } = useSWR(`/users/${userId}`, fetcher, { initialData });
 
-  if (error) {
-    return <div>hello</div>;
+  const {
+    error: eloFFError,
+    loading: eloFFLoading,
+    status: eloFF,
+  } = useFeatureFlag("elos");
+
+  if (error || eloFFError) {
+    return "Error";
   }
 
-  if (!data) {
+  if (!data || eloFFLoading) {
     return <div />;
   }
 
@@ -106,11 +113,13 @@ export default function User({
         <h3>Longest Streak: {data.LongestStreak}</h3>
       </div>
 
-      <div css={styles.streak}>
-        <h3>Current ELO: {data.CurrentElo.toFixed(2)}</h3>
+      {eloFF && (
+        <div css={styles.streak}>
+          <h3>Current ELO: {data.CurrentElo.toFixed(2)}</h3>
 
-        <h3>Peak ELO: {data.PeakElo.toFixed(2)}</h3>
-      </div>
+          <h3>Peak ELO: {data.PeakElo.toFixed(2)}</h3>
+        </div>
+      )}
 
       <H2>Cumulative Statistics</H2>
 
@@ -175,62 +184,64 @@ export default function User({
         </TableBody>
       </Table>
 
-      <div css={styles.historyTitle}>
-        <H2>Historical Statistics</H2>
+      {eloFF && (
+        <div css={styles.historyTitle}>
+          <H2>Historical Statistics</H2>
 
-        <H2>ELO History</H2>
-        <ResponsiveContainer aspect={16 / 9} width={800}>
-          <LineChart
-            width={730}
-            height={250}
-            margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-            data={data.EloHistory.slice()
-              .reverse()
-              .map(({ Date, Elo }) => ({
-                Date: dayjs(Date).utc().unix(),
-                Elo,
-              }))}
-          >
-            <XAxis
-              tick={false}
-              domain={["auto", "auto"]}
-              type="number"
-              dataKey="Date"
-              label={{ value: "Date", position: "insideBottom" }}
-            />
-            <YAxis allowDecimals={false} domain={["auto", "auto"]} />
+          <H2>ELO History</H2>
+          <ResponsiveContainer aspect={16 / 9} width={800}>
+            <LineChart
+              width={730}
+              height={250}
+              margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
+              data={data.EloHistory.slice()
+                .reverse()
+                .map(({ Date, Elo }) => ({
+                  Date: dayjs(Date).utc().unix(),
+                  Elo,
+                }))}
+            >
+              <XAxis
+                tick={false}
+                domain={["auto", "auto"]}
+                type="number"
+                dataKey="Date"
+                label={{ value: "Date", position: "insideBottom" }}
+              />
+              <YAxis allowDecimals={false} domain={["auto", "auto"]} />
 
-            <Tooltip
-              labelFormatter={(value) =>
-                dateToFormat(dayjs.unix(value).utc().toString())
-              }
-              formatter={(elo: number) => [elo.toFixed(2), "ELO"]}
-            />
+              <Tooltip
+                labelFormatter={(value) =>
+                  dateToFormat(dayjs.unix(value).utc().toString())
+                }
+                formatter={(elo: number) => [elo.toFixed(2), "ELO"]}
+              />
 
-            <Line dot={false} type="monotone" dataKey="Elo" />
-          </LineChart>
-        </ResponsiveContainer>
+              <Line dot={false} type="monotone" dataKey="Elo" />
+            </LineChart>
+          </ResponsiveContainer>
 
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Date</TableCell>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>Date</TableCell>
 
-              <TableCell align="right">ELO</TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {data.EloHistory.map(({ Date, Elo }) => (
-              <TableRow key={Date + Elo.toString()}>
-                <TableCell>{dateToFormat(Date)}</TableCell>
-
-                <TableCell align="right">{Elo.toFixed(2)}</TableCell>
+                <TableCell align="right">ELO</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+            </TableHead>
+
+            <TableBody>
+              {data.EloHistory.map(({ Date, Elo }) => (
+                <TableRow key={Date + Elo.toString()}>
+                  <TableCell>{dateToFormat(Date)}</TableCell>
+
+                  <TableCell align="right">{Elo.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   );
 }

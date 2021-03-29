@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -85,6 +86,25 @@ func main() {
 	r.GET("/new", func(c *gin.Context) {
 		c.JSON(http.StatusOK, NewIndexHandler())
 	})
+
+	r.GET("/feature_flag", func(c *gin.Context) {
+		flag, ok := c.GetQuery("flag")
+
+		if !ok {
+			panic(fmt.Errorf("flag was not provided"))
+		}
+
+		flagValue, err := GetFeatureFlag(flag)
+
+		if err != nil {
+			panic(err)
+		}
+
+		c.JSON(http.StatusOK, struct {
+			Status bool
+		}{Status: flagValue})
+	})
+
 	r.GET("/all_users", func(c *gin.Context) {
 		c.JSON(http.StatusOK, AllUsersHandler())
 	})

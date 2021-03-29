@@ -1,0 +1,5 @@
+CREATE TABLE feature_flags (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "flag" TEXT NOT NULL,
+    "status" INTEGER NOT NULL
+);

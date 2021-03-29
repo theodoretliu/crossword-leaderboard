@@ -76,50 +76,28 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 
 	weeksWorstTimes := GetWeeksWorstTimes(daysOfTheWeek)
 
-	elos, err := getElosForDate(daysOfTheWeek[len(daysOfTheWeek)-1])
-	if err != nil {
-		panic(err)
-	}
-
 	for i := 0; i < len(result); i++ {
 		result[i].WeeksAverage = WeeklyAverage(result[i].WeeksTimes, weeksWorstTimes)
-
-		val, ok := elos[result[i].UserId]
-		if !ok {
-			result[i].Elo = 1000.0
-		} else {
-			result[i].Elo = val
-		}
 	}
 
-	// for
+	elosActive, err := GetFeatureFlag("elos")
 
-	// if !shouldComputeElo {
-	// 	for i := 0; i < len(result); i++ {
-	// 		row := db.QueryRow("SELECT elo FROM users WHERE username = ?", result[i].Username)
+	if elosActive {
 
-	// 		var elo sql.NullFloat64
+		elos, err := getElosForDate(daysOfTheWeek[len(daysOfTheWeek)-1])
+		if err != nil {
+			panic(err)
+		}
 
-	// 		err = row.Scan(&elo)
-
-	// 		if err != nil {
-	// 			panic(err)
-	// 		}
-
-	// 		if elo.Valid {
-	// 			result[i].Elo = elo.Float64
-	// 		}
-	// 	}
-	// } else {
-	// 	err := computeElo(daysOfTheWeek[len(daysOfTheWeek)-1])
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	for i := 0; i < len(result); i++ {
-	// 		result[i].Elo = elos[result[i].Username]
-	// 	}
-	// }
+		for i := 0; i < len(result); i++ {
+			val, ok := elos[result[i].UserId]
+			if !ok {
+				result[i].Elo = 1000.0
+			} else {
+				result[i].Elo = val
+			}
+		}
+	}
 
 	daysOfTheWeekStrings := []string{}
 

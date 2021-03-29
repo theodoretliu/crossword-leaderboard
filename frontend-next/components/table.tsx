@@ -6,6 +6,7 @@ import { datesToFormat, padRight, secondsToMinutes } from "utils";
 import Link from "next/link";
 import { UserType } from "pages/index";
 import * as styles from "./table_styles";
+import { useFeatureFlag } from "hooks/use_feature_flag";
 
 interface TableProps {
   daysOfTheWeek: Array<string>;
@@ -18,9 +19,17 @@ interface RowProps {
   WeeksTimes: Array<number>;
   WeeksAverage: number;
   Elo: number;
+  shouldUseElo: boolean;
 }
 
-function Row({ UserId, Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
+function Row({
+  UserId,
+  Username,
+  WeeksTimes,
+  WeeksAverage,
+  Elo,
+  shouldUseElo,
+}: RowProps) {
   return (
     <tr css={styles.tableRow}>
       <td>
@@ -37,7 +46,7 @@ function Row({ UserId, Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
 
       <td>{secondsToMinutes(WeeksAverage)}</td>
 
-      <td>{Elo.toFixed(0)}</td>
+      {shouldUseElo && <td>{Elo.toFixed(0)}</td>}
     </tr>
   );
 }
@@ -108,6 +117,16 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
     return -diff;
   });
 
+  const { loading, status, error } = useFeatureFlag("elos");
+
+  if (loading) {
+    return "Loading";
+  }
+
+  if (error) {
+    return "Error";
+  }
+
   const headers: Array<{
     title: string;
     key: keyof t.TypeOf<typeof UserType> | number;
@@ -115,8 +134,11 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
     { title: "Name", key: "Username" },
     ...dates.map((date, i) => ({ title: date, key: i })),
     { title: "Weekly Average", key: "WeeksAverage" },
-    { title: "ELO", key: "Elo" },
   ];
+
+  if (status === true) {
+    headers.push({ title: "ELO", key: "Elo" });
+  }
 
   return (
     <table css={styles.table}>
@@ -147,7 +169,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
 
       <tbody css={styles.tbody}>
         {newUsers.map((user, i) => (
-          <Row {...user} key={JSON.stringify(user)} />
+          <Row {...user} shouldUseElo={status} key={JSON.stringify(user)} />
         ))}
       </tbody>
     </table>

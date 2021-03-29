@@ -31,7 +31,7 @@ async function fetcher(key: string) {
 
   const decoded = ResponseType.decode(json);
 
-  if (decoded._tag == "Left") {
+  if (decoded._tag === "Left") {
     throw decoded.left;
   }
 
