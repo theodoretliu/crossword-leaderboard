@@ -3,10 +3,10 @@ import useSWR from "swr";
 
 import { API_URL } from "api";
 
-import * as t from "io-ts";
+import * as s from "superstruct";
 
-const FeatureFlagType = t.type({
-  Status: t.boolean,
+const FeatureFlagType = s.object({
+  Status: s.boolean(),
 });
 
 export function useFeatureFlag(
@@ -18,13 +18,9 @@ export function useFeatureFlag(
     );
     let json = await res.json();
 
-    const decoded = FeatureFlagType.decode(json);
+    s.assert(json, FeatureFlagType);
 
-    if (decoded._tag === "Left") {
-      throw decoded.left;
-    }
-
-    return decoded.right;
+    return json;
   });
 
   if (error) {

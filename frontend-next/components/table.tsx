@@ -1,7 +1,7 @@
 /** @jsx jsx */
 import { jsx } from "@emotion/core";
 import { useState } from "react";
-import * as t from "io-ts";
+import * as s from "superstruct";
 import { datesToFormat, padRight, secondsToMinutes } from "utils";
 import Link from "next/link";
 import { UserType } from "pages/index";
@@ -10,7 +10,7 @@ import { useFeatureFlag } from "hooks/use_feature_flag";
 
 interface TableProps {
   daysOfTheWeek: Array<string>;
-  rows: Array<t.TypeOf<typeof UserType>>;
+  rows: Array<s.Infer<typeof UserType>>;
 }
 
 interface RowProps {
@@ -53,7 +53,7 @@ function Row({
 
 export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
   const [{ orderBy, ascending }, setOrder] = useState<{
-    orderBy: keyof t.TypeOf<typeof UserType> | number;
+    orderBy: keyof s.Infer<typeof UserType> | number;
     ascending: boolean;
   }>({
     orderBy: "WeeksAverage",
@@ -129,7 +129,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
 
   const headers: Array<{
     title: string;
-    key: keyof t.TypeOf<typeof UserType> | number;
+    key: keyof s.Infer<typeof UserType> | number;
   }> = [
     { title: "Name", key: "Username" },
     ...dates.map((date, i) => ({ title: date, key: i })),

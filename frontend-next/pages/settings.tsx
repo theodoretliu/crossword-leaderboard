@@ -5,24 +5,20 @@ import { Header } from "components/header";
 import Head from "next/head";
 import useSWR from "swr";
 import { H2 } from "components/h2";
-import * as t from "io-ts";
+import * as s from "superstruct";
 import { API_URL } from "api";
 
-const UsersList = t.type({
-  Users: t.array(t.string),
+const UsersList = s.object({
+  Users: s.array(s.string()),
 });
 
 async function fetcher(key: string) {
   const response = await fetch(API_URL + key);
   const json = await response.json();
 
-  const decoded = UsersList.decode(json);
+  s.assert(json, UsersList);
 
-  if (decoded._tag == "Left") {
-    throw decoded.left;
-  }
-
-  return decoded.right;
+  return json;
 }
 
 export async function getServerSideProps() {

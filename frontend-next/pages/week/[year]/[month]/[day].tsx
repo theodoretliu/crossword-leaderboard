@@ -7,7 +7,7 @@ import { GetServerSideProps } from "next";
 import { Header } from "components/header";
 import { API_URL } from "api";
 import { ResponseType } from "pages/index";
-import * as t from "io-ts";
+import * as s from "superstruct";
 import { Table } from "components/table";
 import { H2 } from "components/h2";
 
@@ -19,13 +19,9 @@ async function fetcher(key: string) {
   const res = await fetch(API_URL + key);
   const json = await res.json();
 
-  const decoded = ResponseType.decode(json);
+  s.assert(json, ResponseType);
 
-  if (decoded._tag == "Left") {
-    throw decoded.left;
-  }
-
-  return decoded.right;
+  return json;
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -38,7 +34,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 export default function Week({
   initialData,
 }: {
-  initialData: t.TypeOf<typeof ResponseType>;
+  initialData: s.Infer<typeof ResponseType>;
 }) {
   const router = useRouter();
 

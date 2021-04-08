@@ -6,36 +6,33 @@ import { API_URL } from "api";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import useSWR from "swr";
-import * as t from "io-ts";
+import * as s from "superstruct";
 import { Table } from "components/table";
 import { datesToFormat } from "utils";
+import { assert } from "superstruct";
 
 dayjs.extend(utc);
 
-export const UserType = t.type({
-  UserId: t.number,
-  Username: t.string,
-  WeeksTimes: t.array(t.number),
-  WeeksAverage: t.number,
-  Elo: t.number,
+export const UserType = s.object({
+  UserId: s.number(),
+  Username: s.string(),
+  WeeksTimes: s.array(s.number()),
+  WeeksAverage: s.number(),
+  Elo: s.number(),
 });
 
-export const ResponseType = t.type({
-  Users: t.array(UserType),
-  DaysOfTheWeek: t.array(t.string),
+export const ResponseType = s.object({
+  Users: s.array(UserType),
+  DaysOfTheWeek: s.array(s.string()),
 });
 
 async function fetcher(key: string) {
   const res = await fetch(API_URL + key);
   const json = await res.json();
 
-  const decoded = ResponseType.decode(json);
+  assert(json, ResponseType);
 
-  if (decoded._tag === "Left") {
-    throw decoded.left;
-  }
-
-  return decoded.right;
+  return json;
 }
 
 export async function getServerSideProps() {
@@ -44,7 +41,7 @@ export async function getServerSideProps() {
   return { props: { initialData } };
 }
 
-function App({ initialData }: { initialData: t.TypeOf<typeof ResponseType> }) {
+function App({ initialData }: { initialData: s.Infer<typeof ResponseType> }) {
   const { error, data } = useSWR("/new", fetcher, {
     initialData,
     refreshInterval: 10 * 1000,

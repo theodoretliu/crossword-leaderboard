@@ -6,7 +6,7 @@ import utc from "dayjs/plugin/utc";
 import { GetServerSideProps } from "next";
 import { Header } from "components/header";
 import { API_URL } from "api";
-import * as t from "io-ts";
+import * as s from "superstruct";
 import { H2 } from "components/h2";
 import useSWR from "swr";
 import {
@@ -31,28 +31,28 @@ import {
 } from "recharts";
 import { useFeatureFlag } from "hooks/use_feature_flag";
 
-const StatsType = t.type({
-  Average: t.number,
-  Best: t.number,
-  Worst: t.number,
-  NumCompleted: t.number,
+const StatsType = s.object({
+  Average: s.number(),
+  Best: s.number(),
+  Worst: s.number(),
+  NumCompleted: s.number(),
 });
 
-const ResponseType = t.type({
-  Username: t.string,
+const ResponseType = s.object({
+  Username: s.string(),
   MiniStats: StatsType,
   SaturdayStats: StatsType,
   OverallStats: StatsType,
-  LongestStreak: t.number,
-  CurrentStreak: t.number,
-  EloHistory: t.array(
-    t.type({
-      Date: t.string,
-      Elo: t.number,
+  LongestStreak: s.number(),
+  CurrentStreak: s.number(),
+  EloHistory: s.array(
+    s.object({
+      Date: s.string(),
+      Elo: s.number(),
     })
   ),
-  PeakElo: t.number,
-  CurrentElo: t.number,
+  PeakElo: s.number(),
+  CurrentElo: s.number(),
 });
 
 dayjs.extend(utc);
@@ -61,13 +61,9 @@ async function fetcher(key: string) {
   const res = await fetch(API_URL + key);
   const json = await res.json();
 
-  const decoded = ResponseType.decode(json);
+  s.assert(json, ResponseType);
 
-  if (decoded._tag == "Left") {
-    throw decoded.left;
-  }
-
-  return decoded.right;
+  return json;
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -80,7 +76,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 export default function User({
   initialData,
 }: {
-  initialData: t.TypeOf<typeof ResponseType>;
+  initialData: s.Infer<typeof ResponseType>;
 }) {
   const router = useRouter();
 
