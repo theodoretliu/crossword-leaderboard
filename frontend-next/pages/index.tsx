@@ -42,7 +42,7 @@ export async function getServerSideProps() {
 
 function App({ initialData }: { initialData: s.Infer<typeof ResponseType> }) {
   const { error, data } = useSWR("/new", fetcher, {
-    initialData,
+    fallbackData: initialData,
     refreshInterval: 10 * 1000,
   });
 

@@ -77,7 +77,7 @@ function Settings({ initialData }: SettingsProps) {
   }, [removedUsers]);
 
   const { error, data } = useSWR("/all_users", fetcher, {
-    initialData,
+    fallbackData: initialData,
   });
 
   if (error) {

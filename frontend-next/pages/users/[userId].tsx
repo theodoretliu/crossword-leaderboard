@@ -81,7 +81,9 @@ export default function User({
 
   const { userId } = router.query;
 
-  const { error, data } = useSWR(`/users/${userId}`, fetcher, { initialData });
+  const { error, data } = useSWR(`/users/${userId}`, fetcher, {
+    fallbackData: initialData,
+  });
 
   const {
     error: eloFFError,
