@@ -1,5 +1,4 @@
-/** @jsx jsx */
-import { jsx } from "@emotion/core";
+import { jsx } from "@emotion/react";
 import { useState } from "react";
 import * as s from "superstruct";
 import { datesToFormat, padRight, secondsToMinutes } from "utils";

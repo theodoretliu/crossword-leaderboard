@@ -1,5 +1,4 @@
-/** @jsx jsx */
-import { jsx, css } from "@emotion/core";
+import { jsx, css } from "@emotion/react";
 import Link from "next/link";
 import * as styles from "./header_styles";
 

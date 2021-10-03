@@ -1,5 +1,5 @@
 /** @jsx jsx */
-import { jsx } from "@emotion/core";
+import { jsx } from "@emotion/react";
 import { useMemo } from "react";
 import { Header } from "components/header";
 import { H2 } from "components/h2";
