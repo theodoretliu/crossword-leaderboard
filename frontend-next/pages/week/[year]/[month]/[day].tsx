@@ -1,4 +1,3 @@
-/** @jsx jsx */
 import { jsx } from "@emotion/react";
 import { useRouter } from "next/router";
 import dayjs from "dayjs";

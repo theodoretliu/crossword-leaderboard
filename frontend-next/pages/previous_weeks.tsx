@@ -1,4 +1,3 @@
-/** @jsx jsx */
 import { jsx } from "@emotion/react";
 import { useMemo } from "react";
 import { Header } from "components/header";
