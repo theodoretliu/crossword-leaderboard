@@ -58,15 +58,15 @@ func main() {
 		}
 	}()
 
-	go func() {
-		for {
-			err := setElosInDb()
-			if err != nil {
-				sentry.CaptureException(err)
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
+	// go func() {
+	// 	for {
+	// 		err := setElosInDb()
+	// 		if err != nil {
+	// 			sentry.CaptureException(err)
+	// 		}
+	// 		time.Sleep(10 * time.Second)
+	// 	}
+	// }()
 
 	r := gin.Default()
 
