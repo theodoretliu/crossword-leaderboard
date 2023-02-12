@@ -1,0 +1,20 @@
+services:
+  api:
+    image: crossword-server
+    environment:
+      - DB_URL=db/production.sqlite3
+    volumes:
+      - ./server/db/:/app/db
+    restart: always
+  web:
+    image: crossword-frontend-server
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=http://crossword.theodoretliu.com/api
+  caddy:
+    image: caddy
+    volumes:
+      - ./server/Caddyfile:/etc/caddy/Caddyfile
+    restart: always
+    ports:
+      - 80:80
