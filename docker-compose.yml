@@ -3,6 +3,7 @@ services:
     image: crossword-server
     environment:
       - DB_URL=db/production.sqlite3
+      - GIN_MODE=release
     volumes:
       - ./server/db/:/app/db
     restart: always
