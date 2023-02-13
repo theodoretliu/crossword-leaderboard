@@ -9,7 +9,7 @@ COPY package.json package-lock.json .
 RUN npm i
 
 COPY . /app
-ENV NEXT_PUBLIC_API_URL=http://crossword.theodoretliu.com/api
+ENV NEXT_PUBLIC_API_URL=https://crossword.theodoretliu.com/api
 RUN npm run build
 
 ENTRYPOINT npm run start
