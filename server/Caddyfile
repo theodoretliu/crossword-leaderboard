@@ -1,8 +1,8 @@
-http://localhost {
-    handle_path /api/* {
-        reverse_proxy api:8080
-    }
-    handle_path /* {
-        reverse_proxy web:3000
-    }
+crossword.theodoretliu.com {
+	handle_path /api/* {
+		reverse_proxy api:8080
+	}
+	handle_path /* {
+		reverse_proxy web:3000
+	}
 }
