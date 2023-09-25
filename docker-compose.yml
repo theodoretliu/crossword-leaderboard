@@ -8,11 +8,13 @@ services:
     volumes:
       - ./server/db/:/app/db
     restart: always
+    profiles: ["production"]
   web:
     image: crossword-frontend-server
     restart: always
     environment:
       - NEXT_PUBLIC_API_URL=https://crossword.theodoretliu.com/api
+    profiles: ["production"]
   caddy:
     image: caddy
     volumes:
@@ -21,3 +23,15 @@ services:
     ports:
       - 80:80
       - 443:443
+    profiles: ["production"]
+  dev-database:
+    restart: always
+    image: postgres:15
+    ports:
+      - "20001:5432"
+    volumes:
+      - ./docker/postgres:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    profiles: ["dev"]

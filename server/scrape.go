@@ -1,17 +1,19 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
+	"fmt"
+	"io"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/getsentry/sentry-go"
+	"github.com/jackc/pgx/v5"
 )
 
 func parseTime(s string) (int, error) {
@@ -29,6 +31,119 @@ func parseTime(s string) (int, error) {
 	}
 
 	return minutes*60 + seconds, nil
+}
+
+type result struct {
+	UserID int64
+	Name   string
+	Score  *struct {
+		SecondsSpentSolving int32
+	}
+}
+
+type nytResponse struct {
+	Data []result
+}
+
+func getResultsForDate(date time.Time, cookie string) ([]result, error) {
+	formattedDate := date.UTC().Format("2006-01-02")
+	requestString := fmt.Sprintf("https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini/%s.json", formattedDate)
+
+	header := http.Header{}
+	header.Add("Cookie", cookie)
+	reader := strings.NewReader("")
+	request, err := http.NewRequest("GET", requestString, reader)
+	if err != nil {
+		return nil, err
+	}
+
+	request.Header = header
+
+	client := http.Client{}
+	resp, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var rawData nytResponse
+	json.Unmarshal(body, &rawData)
+
+	return rawData.Data, nil
+}
+
+func updateUsers(tx pgx.Tx, apiResults []result) ([]int64, error) {
+	values := []interface{}{}
+	valueParens := []string{}
+	count := int32(1)
+
+	for _, user := range apiResults {
+		valueParens = append(valueParens, fmt.Sprintf("($%d, $%d)", count, count+1))
+		count += 2
+		values = append(values, user.UserID, user.Name)
+	}
+
+	queryString := fmt.Sprintf("INSERT INTO users (nyt_user_id, name) VALUES %s ON CONFLICT (nyt_user_id) DO UPDATE SET name = name", strings.Join(valueParens, ","))
+	rows, err := tx.Query(context.Background(), queryString, values...)
+	if err != nil {
+		return nil, err
+	}
+
+	userIds, err := pgx.CollectRows(rows, pgx.RowTo[int64])
+
+	return userIds, nil
+}
+
+func insertResults(tx pgx.Tx, apiResults []result, userIds []int64, date time.Time) error {
+	valueParens := []string{}
+	values := []interface{}{}
+	count := int32(1)
+
+	for i, user := range apiResults {
+		if user.Score != nil {
+			userId := userIds[i]
+			valueParens = append(valueParens, fmt.Sprintf("($%d, $%d, $%d)", count, count+1, count+2))
+			values = append(values, userId, user.Score.SecondsSpentSolving, date.UTC().Format("2006-01-02"))
+			count += 3
+		}
+	}
+	queryString := fmt.Sprintf("INSERT INTO times (user_id, time_in_seconds, date) VALUES %s ON CONFLICT DO NOTHING", strings.join(valueParens, ","))
+	_, err := tx.Exec(context.Background(), queryString, values...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func dbActionsForDate(db pgx.Conn, date time.Time, cookie string) error {
+	apiResults, err := getResultsForDate(date, cookie)
+	if err != nil {
+		return err
+	}
+
+	tx, err := db.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+
+	userIds, err := updateUsers(tx, apiResults)
+	if err != nil {
+		return err
+	}
+
+	err = insertResults(tx, apiResults, userIds, date)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func scrape(db *sql.DB) error {
@@ -65,18 +180,14 @@ func scrape(db *sql.DB) error {
 
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
 
-	regex := regexp.MustCompile(`window.data\s*=\s*([^<]*)`)
-
-	matches := regex.FindStringSubmatch(string(body))
-
 	var rawData map[string]interface{}
 
-	json.Unmarshal([]byte(matches[1]), &rawData)
+	json.Unmarshal(body, &rawData)
 
 	stringDate, ok := rawData["printDate"].(string)
 	if !ok {
