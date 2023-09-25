@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"log"
@@ -14,12 +15,14 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5/pgxpool"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/newrelic/go-agent/v3/integrations/nrgin"
 	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 var db *sql.DB
+var pgxPool *pgxpool.Pool
 
 const defaultPort = "8080"
 
@@ -32,11 +35,14 @@ func main() {
 		panic(err)
 	}
 
-	defer sentry.Flush(2 * time.Second)
 	defer sentry.Recover()
 
 	db, err = sql.Open("sqlite3", os.Getenv("DB_URL"))
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
+	pgxPool, err = pgxpool.New(context.Background(), os.Getenv("DB_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -50,7 +56,7 @@ func main() {
 
 	go func() {
 		for {
-			err := scrape(db)
+			err := dbActionsForDate(pgxPool, time.Now())
 			if err != nil {
 				sentry.CaptureException(err)
 			}
