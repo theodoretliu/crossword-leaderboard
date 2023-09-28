@@ -32,9 +32,7 @@ function Row({
   return (
     <tr css={styles.tableRow}>
       <td>
-        <Link href={`/users/${UserId}/`}>
-          <a>{Username}</a>
-        </Link>
+        <Link href={`/users/${UserId}/`}>{Username}</Link>
       </td>
 
       {padRight(WeeksTimes, -1, 7).map((weeksTime, i) => (

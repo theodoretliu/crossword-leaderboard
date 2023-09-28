@@ -5,19 +5,17 @@ import * as styles from "./header_styles";
 export function Header() {
   return (
     <div css={styles.headerContainer}>
-      <Link href="/" passHref>
-        <a css={styles.headerTitle}>
-          <h1>Mini Crossword Leaderboard</h1>
-        </a>
+      <Link href="/" css={styles.headerTitle}>
+        <h1>Mini Crossword Leaderboard</h1>
       </Link>
 
       <div css={styles.rightLinks}>
-        <Link href="/previous_weeks" passHref>
-          <a css={styles.headerLinks}>Previous Weeks</a>
+        <Link href="/previous_weeks" css={styles.headerLinks}>
+          Previous Weeks
         </Link>
 
-        <Link href="/settings" passHref>
-          <a css={styles.headerLinks}>Settings</a>
+        <Link href="/settings" passHref css={styles.headerLinks}>
+          Settings
         </Link>
       </div>
     </div>

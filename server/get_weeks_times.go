@@ -1,8 +1,10 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type userInfo struct {
@@ -22,15 +24,26 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	firstDayOfWeek := getFirstDayOfWeek(day)
 	daysOfTheWeek := getDaysOfTheWeek(firstDayOfWeek)
 	query := `
-		select A.id, username, time_in_seconds, date from
-			(select * from users) as A
-			left join
-			(select * from times where date(date) >= date(?) AND date(date) <= date(?)) as B
-			on A.id = B.user_id
-			order by A.id, date(B.date);
+		select u.id, u.name, t.time_in_seconds, t.date from
+		users as u
+		inner join
+		times as t
+		on t.user_id = u.id AND t.date >= $1 AND t.date <= $2
+		order by u.id, t.date;
 	`
 
-	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
+	rows, err := pool.Query(context.Background(), query, daysOfTheWeek[0], daysOfTheWeek[6])
+
+	if err != nil {
+		panic(err)
+	}
+
+	resRows, err := pgx.CollectRows(rows, pgx.RowToStructByPos[struct {
+		Id            int64
+		Name          string
+		TimeInSeconds int32
+		Date          time.Time
+	}])
 
 	if err != nil {
 		panic(err)
@@ -41,36 +54,19 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	var currentUser string
 	dateIndex := 0
 
-	for rows.Next() {
-		var (
-			userId        int64
-			user          string
-			timeInSeconds sql.NullInt32
-			date          sql.NullTime
-		)
-
-		err = rows.Scan(&userId, &user, &timeInSeconds, &date)
-
-		if err != nil {
-			panic(err)
-		}
-
-		if user != currentUser {
-			result = append(result, userInfo{userId, user, []int32{}, 0, 1000.0})
-			currentUser = user
+	for _, row := range resRows {
+		if row.Name != currentUser {
+			result = append(result, userInfo{row.Id, row.Name, []int32{}, 0, 1000.0})
+			currentUser = row.Name
 			dateIndex = 0
 		}
 
-		if !timeInSeconds.Valid {
-			continue
-		}
-
-		for date.Time.UTC() != daysOfTheWeek[dateIndex] {
+		for row.Date.UTC() != daysOfTheWeek[dateIndex] {
 			result[len(result)-1].WeeksTimes = append(result[len(result)-1].WeeksTimes, -1)
 			dateIndex++
 		}
 
-		result[len(result)-1].WeeksTimes = append(result[len(result)-1].WeeksTimes, timeInSeconds.Int32)
+		result[len(result)-1].WeeksTimes = append(result[len(result)-1].WeeksTimes, row.TimeInSeconds)
 		dateIndex++
 	}
 
@@ -80,24 +76,24 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 		result[i].WeeksAverage = WeeklyAverage(result[i].WeeksTimes, weeksWorstTimes)
 	}
 
-	elosActive, err := GetFeatureFlag("elos")
+	// elosActive, err := GetFeatureFlag("elos")
 
-	if elosActive {
+	// if elosActive {
 
-		elos, err := getElosForDate(daysOfTheWeek[len(daysOfTheWeek)-1])
-		if err != nil {
-			panic(err)
-		}
+	// 	elos, err := getElosForDate(daysOfTheWeek[len(daysOfTheWeek)-1])
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
 
-		for i := 0; i < len(result); i++ {
-			val, ok := elos[result[i].UserId]
-			if !ok {
-				result[i].Elo = 1000.0
-			} else {
-				result[i].Elo = val
-			}
-		}
-	}
+	// 	for i := 0; i < len(result); i++ {
+	// 		val, ok := elos[result[i].UserId]
+	// 		if !ok {
+	// 			result[i].Elo = 1000.0
+	// 		} else {
+	// 			result[i].Elo = val
+	// 		}
+	// 	}
+	// }
 
 	daysOfTheWeekStrings := []string{}
 

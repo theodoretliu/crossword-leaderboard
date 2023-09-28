@@ -54,6 +54,8 @@ function App({ initialData }: { initialData: s.Infer<typeof ResponseType> }) {
     return <Header />;
   }
 
+  // return "hello";
+
   let dates = datesToFormat(data.DaysOfTheWeek);
 
   return (
