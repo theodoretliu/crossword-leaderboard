@@ -2,7 +2,7 @@ services:
   api:
     image: crossword-server
     environment:
-      - DB_URL=db/production.sqlite3
+      - DB_URL=${DB_URL}
       - GIN_MODE=release
       - DSN=https://514620b5bde14216af129b62e81ffb0e@o370716.ingest.sentry.io/5181475
     volumes:
