@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"time"
 )
 
@@ -29,15 +30,18 @@ type UserResponse struct {
 }
 
 func UserHandler(userId int64) UserResponse {
-	row := db.QueryRow(`SELECT username FROM users WHERE id = ?`, userId)
-
 	var username string
-	err := row.Scan(&username)
+	err := pool.QueryRow(context.Background(), "SELECT name FROM users where id = $1", userId).Scan(&username)
 	if err != nil {
 		panic(err)
 	}
 
-	rows, err := db.Query(`SELECT time_in_seconds, date FROM times WHERE user_id = ? ORDER BY date(date) ASC;`, userId)
+	rows, err := pool.Query(
+		context.Background(),
+		`
+			SELECT time_in_seconds, date FROM times WHERE user_id = $1 ORDER BY date(date) ASC;
+		`, userId)
+
 	if err != nil {
 		panic(err)
 	}

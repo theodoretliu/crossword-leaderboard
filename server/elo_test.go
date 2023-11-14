@@ -1,31 +1,25 @@
 package main
 
-import (
-	"database/sql"
-	"testing"
-	"time"
-)
+// func TestAllDates(t *testing.T) {
+// 	db, err := sql.Open("sqlite3", "production.sqlite3")
 
-func TestAllDates(t *testing.T) {
-	db, err := sql.Open("sqlite3", "production.sqlite3")
+// 	if err != nil {
+// 		panic("hello")
+// 	}
 
-	if err != nil {
-		panic("hello")
-	}
+// 	getAllDates(db)
 
-	getAllDates(db)
+// }
 
-}
+// func TestComputeElo(t *testing.T) {
+// 	db, err := sql.Open("sqlite3", "production.sqlite3")
 
-func TestComputeElo(t *testing.T) {
-	db, err := sql.Open("sqlite3", "production.sqlite3")
+// 	if err != nil {
+// 		panic("hello")
+// 	}
 
-	if err != nil {
-		panic("hello")
-	}
-
-	computeElo(time.Now())
-}
+// 	computeElo(time.Now())
+// }
 
 // func TestEloUpdate(t *testing.T) {
 // 	r1, r2 := 1200., 1000.

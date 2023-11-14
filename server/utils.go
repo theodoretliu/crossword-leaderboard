@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"math"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 func getFirstDayOfWeek(givenDay time.Time) time.Time {
@@ -31,36 +34,35 @@ func GetWeeksWorstTimes(daysOfTheWeek []time.Time) []int32 {
 	var worstTimes []int32
 
 	query := `
-SELECT max(time_in_seconds), date FROM times
-	WHERE date(date) >= date($1) AND date(date) <= date($2)
-	GROUP BY date(date)
-	ORDER BY date(date) ASC
+		SELECT max(time_in_seconds), date FROM times
+		WHERE date >= $1 AND date <= $2
+		GROUP BY date(date)
+		ORDER BY date(date) ASC
 	`
 
-	rows, err := db.Query(query, daysOfTheWeek[0], daysOfTheWeek[6])
+	rows, err := pool.Query(context.Background(), query, daysOfTheWeek[0], daysOfTheWeek[6])
+
+	if err != nil {
+		panic(err)
+	}
+
+	scannedRows, err := pgx.CollectRows(rows, pgx.RowToStructByPos[struct {
+		WorstTime int32
+		Date      time.Time
+	}])
 
 	if err != nil {
 		panic(err)
 	}
 
 	i := 0
-
-	for rows.Next() {
-		var worstTime int32
-		var date time.Time
-
-		err = rows.Scan(&worstTime, &date)
-
-		if err != nil {
-			panic(err)
-		}
-
-		for date.UTC() != daysOfTheWeek[i] {
+	for _, row := range scannedRows {
+		for row.Date.UTC() != daysOfTheWeek[i] {
 			i++
 			worstTimes = append(worstTimes, -1)
 		}
 
-		worstTimes = append(worstTimes, worstTime)
+		worstTimes = append(worstTimes, row.WorstTime)
 		i++
 	}
 

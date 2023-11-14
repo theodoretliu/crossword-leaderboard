@@ -1,25 +1,23 @@
 package main
 
 import (
+	"context"
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/getsentry/sentry-go"
 	sentrygin "github.com/getsentry/sentry-go/gin"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/newrelic/go-agent/v3/integrations/nrgin"
-	"github.com/newrelic/go-agent/v3/newrelic"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var db *sql.DB
+var pool *pgxpool.Pool
 
 const defaultPort = "8080"
 
@@ -32,41 +30,16 @@ func main() {
 		panic(err)
 	}
 
-	defer sentry.Flush(2 * time.Second)
 	defer sentry.Recover()
 
-	db, err = sql.Open("sqlite3", os.Getenv("DB_URL"))
-
+	pool, err = pgxpool.New(context.Background(), os.Getenv("DB_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	app, err := newrelic.NewApplication(
-		newrelic.ConfigAppName("Crossword Leaderboard"),
-		newrelic.ConfigLicense(os.Getenv("NEW_RELIC_LICENSE_KEY")),
-	)
-
 	defer db.Close()
 
-	go func() {
-		for {
-			err := scrape(db)
-			if err != nil {
-				sentry.CaptureException(err)
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
-
-	// go func() {
-	// 	for {
-	// 		err := setElosInDb()
-	// 		if err != nil {
-	// 			sentry.CaptureException(err)
-	// 		}
-	// 		time.Sleep(10 * time.Second)
-	// 	}
-	// }()
+	go startScrapers()
 
 	r := gin.Default()
 
@@ -75,8 +48,6 @@ func main() {
 	pprof.Register(r)
 
 	r.Use(cors.Default())
-
-	r.Use(nrgin.Middleware(app))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -88,21 +59,22 @@ func main() {
 	})
 
 	r.GET("/feature_flag", func(c *gin.Context) {
-		flag, ok := c.GetQuery("flag")
+		c.JSON(http.StatusOK, struct{ Status bool }{Status: false})
+		// flag, ok := c.GetQuery("flag")
 
-		if !ok {
-			panic(fmt.Errorf("flag was not provided"))
-		}
+		// if !ok {
+		// 	panic(fmt.Errorf("flag was not provided"))
+		// }
 
-		flagValue, err := GetFeatureFlag(flag)
+		// flagValue, err := GetFeatureFlag(flag)
 
-		if err != nil {
-			panic(err)
-		}
+		// if err != nil {
+		// 	panic(err)
+		// }
 
-		c.JSON(http.StatusOK, struct {
-			Status bool
-		}{Status: flagValue})
+		// c.JSON(http.StatusOK, struct {
+		// 	Status bool
+		// }{Status: flagValue})
 	})
 
 	r.GET("/all_users", func(c *gin.Context) {
