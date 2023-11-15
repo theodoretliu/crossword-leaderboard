@@ -37,6 +37,7 @@ export default function PreviousWeeks() {
               weekStart.month() + 1
             }/${weekStart.date()}`}
             passHref
+            legacyBehavior
           >
             <a css={styles.link}>{weekStart.format("MMMM D, YYYY")}</a>
           </Link>

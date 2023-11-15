@@ -8,6 +8,6 @@ const weekTitle = css`
   padding-top: 0px;
 `;
 
-export const H2: React.FC = ({ children }) => (
+export const H2 = ({ children }: { children: React.ReactNode }) => (
   <h2 css={weekTitle}>{children}</h2>
 );

@@ -15,7 +15,7 @@ import {
   TableCell,
   TableHead,
   TableRow,
-} from "@material-ui/core";
+} from "@mui/material";
 import { dateToFormat, secondsToMinutes } from "utils";
 import * as styles from "components/[userId]_styles";
 

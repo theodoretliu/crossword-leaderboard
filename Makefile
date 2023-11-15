@@ -1,12 +1,16 @@
-.PHONY: all server migration docker load-images
+.PHONY: all server migration docker docker-server docker-frontend load-images
 
-docker: 
+docker-server:
 	docker buildx build --platform linux/amd64/v2 -t crossword-server server
-	docker buildx build --platform linux/amd64/v2 -t crossword-frontend-server frontend-next
 	docker save -o crossword-server.tar crossword-server
+	scp crossword-server.tar theodoreliu@crossword.theodoretliu.com:
+
+docker-frontend:
+	docker buildx build --platform linux/amd64/v2 -t crossword-frontend-server frontend-next
 	docker save -o crossword-frontend-server.tar crossword-frontend-server
-	scp crossword-server.tar theodoreliu@34.135.192.137:crossword-server.tar
-	scp crossword-frontend-server.tar theodoreliu@34.135.192.137:crossword-frontend-server.tar
+	scp crossword-frontend-server.tar theodoreliu@crossword.theodoretliu.com:
+
+docker: docker-server docker-frontend
 
 load-images:
 	docker load -i ../crossword-server.tar

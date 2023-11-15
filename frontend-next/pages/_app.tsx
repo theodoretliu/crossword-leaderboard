@@ -2,13 +2,9 @@ import "../normalize.css";
 import "../fonts.css";
 import React from "react";
 import Head from "next/head";
+import { AppProps } from "next/app";
 
-interface AppProps<T> {
-  Component: React.FC<T>;
-  pageProps: T;
-}
-
-export default function App<T>({ Component, pageProps }: AppProps<T>) {
+export default function App({ Component, pageProps }: AppProps) {
   return (
     <React.Fragment>
       <Head>

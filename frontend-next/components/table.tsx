@@ -32,7 +32,7 @@ function Row({
   return (
     <tr css={styles.tableRow}>
       <td>
-        <Link href={`/users/${UserId}/`}>
+        <Link href={`/users/${UserId}/`} legacyBehavior>
           <a>{Username}</a>
         </Link>
       </td>
