@@ -1,31 +1,27 @@
 package main
 
+import (
+	"context"
+
+	"github.com/jackc/pgx/v5"
+)
+
 type AllUsersResponse struct {
 	Users []string
 }
 
 func AllUsersHandler() AllUsersResponse {
-	query := `SELECT username FROM users;`
+	query := `SELECT name FROM users;`
 
-	res, err := db.Query(query)
-
+	rows, err := pool.Query(context.Background(), query)
 	if err != nil {
 		panic(err)
 	}
 
-	names := []string{}
-
-	for res.Next() {
-		var name string
-
-		err = res.Scan(&name)
-
-		if err != nil {
-			panic(err)
-		}
-
-		names = append(names, name)
+	resRows, err := pgx.CollectRows(rows, pgx.RowTo[string])
+	if err != nil {
+		panic(err)
 	}
 
-	return AllUsersResponse{names}
+	return AllUsersResponse{Users: resRows}
 }
