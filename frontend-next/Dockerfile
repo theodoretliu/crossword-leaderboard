@@ -1,4 +1,4 @@
-FROM node:20
+FROM node:20-slim
 
 RUN apt update && apt upgrade -y
 RUN npm i -g npm@latest

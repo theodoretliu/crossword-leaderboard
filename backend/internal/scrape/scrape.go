@@ -14,7 +14,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-const MinYear = 2014
+const MinYear = 2020
 const MinMonth = 8
 const MinDay = 21
 

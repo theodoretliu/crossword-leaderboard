@@ -15,5 +15,6 @@ RUN go build -o ./scraper.bin ./cmd/scraper
 RUN go build -o ./scrapeall.bin ./cmd/scrapeall
 
 FROM ubuntu
+RUN apt update && apt upgrade -y && apt install -y ca-certificates
 COPY --from=0 /app/server.bin /app/scraper.bin /app/scrapeall.bin /bin/
 ENTRYPOINT /bin/server.bin
