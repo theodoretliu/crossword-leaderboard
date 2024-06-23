@@ -16,7 +16,7 @@ services:
     entrypoint: /bin/scraper.bin
     profiles: ["production"]
     restart: always
-  scraper:
+  scrapeall:
     image: crossword-server
     environment:
       - DB_URL=${DB_URL}
