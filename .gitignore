@@ -16,3 +16,6 @@ dev.sqlite3*
 *.tar
 
 docker
+
+*.sql
+*.bin

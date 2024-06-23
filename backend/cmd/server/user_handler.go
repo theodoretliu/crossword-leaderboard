@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 type stats struct {
@@ -17,6 +19,11 @@ type dateElo struct {
 	Elo  float64
 }
 
+type timeStruct struct {
+	TimeInSeconds int64
+	Date          time.Time
+}
+
 type UserResponse struct {
 	Username      string
 	MiniStats     stats
@@ -27,6 +34,7 @@ type UserResponse struct {
 	CurrentStreak int64
 	PeakElo       float64
 	CurrentElo    float64
+	AllTimes      []timeStruct
 }
 
 func UserHandler(userId int64) UserResponse {
@@ -46,6 +54,12 @@ func UserHandler(userId int64) UserResponse {
 		panic(err)
 	}
 
+	allTimes, err := pgx.CollectRows(rows, pgx.RowToStructByPos[timeStruct])
+
+	if err != nil {
+		panic(err)
+	}
+
 	longestStreak := int64(0)
 	currentStreak := int64(0)
 	var previousDay *time.Time
@@ -60,17 +74,16 @@ func UserHandler(userId int64) UserResponse {
 	var worstMiniTime *int64
 	miniCount := int64(0)
 
-	for rows.Next() {
-		var timeInSeconds int64
-		var date time.Time
-
-		err = rows.Scan(&timeInSeconds, &date)
-
-		if err != nil {
-			panic(err)
-		}
+	for _, timeStruct := range allTimes {
+		var timeInSeconds = timeStruct.TimeInSeconds
+		var date = timeStruct.Date
 
 		date = date.UTC()
+
+		// at the moment, times less than 3 seconds are implausible
+		if timeInSeconds < 3 {
+			continue
+		}
 
 		if previousDay == nil {
 			currentStreak = 1
@@ -182,16 +195,18 @@ func UserHandler(userId int64) UserResponse {
 			CurrentStreak: currentStreak,
 			PeakElo:       peakElo,
 			CurrentElo:    currentElo,
+			AllTimes:      allTimes,
 		}
-	} else {
-		return UserResponse{
-			Username:      username,
-			MiniStats:     miniStats,
-			SaturdayStats: saturdayStats,
-			OverallStats:  overallStats,
-			LongestStreak: longestStreak,
-			CurrentStreak: currentStreak,
-			EloHistory:    []dateElo{},
-		}
+	}
+
+	return UserResponse{
+		Username:      username,
+		MiniStats:     miniStats,
+		SaturdayStats: saturdayStats,
+		OverallStats:  overallStats,
+		LongestStreak: longestStreak,
+		CurrentStreak: currentStreak,
+		EloHistory:    []dateElo{},
+		AllTimes:      allTimes,
 	}
 }

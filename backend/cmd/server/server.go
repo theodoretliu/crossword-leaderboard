@@ -39,8 +39,6 @@ func main() {
 
 	defer db.Close()
 
-	go startScrapers()
-
 	r := gin.Default()
 
 	r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
