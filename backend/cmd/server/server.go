@@ -21,99 +21,91 @@ var pool *pgxpool.Pool
 
 const defaultPort = "8080"
 
-// func facetiousPanic() {
-// 	panic("hello")
-// }
-
 func main() {
-	// err := sentry.Init(sentry.ClientOptions{
-	// 	Dsn:              os.Getenv("DSN"),
-	// 	AttachStacktrace: true,
-	// })
-	// if err != nil {
-	// 	panic(err)
-	// }
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("DSN"),
+		AttachStacktrace: true,
+	})
+	if err != nil {
+		panic(err)
+	}
 
-	// defer sentry.Recover()
+	defer sentry.Recover()
 
-	// pool, err = pgxpool.New(context.Background(), os.Getenv("DB_URL"))
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
+	pool, err = pgxpool.New(context.Background(), os.Getenv("DB_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// defer db.Close()
+	defer db.Close()
 
-	// go startScrapers()
+	r := gin.Default()
 
-	// go facetiousPanic()
+	r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
 
-	// r := gin.Default()
+	pprof.Register(r)
 
-	// r.Use(sentrygin.New(sentrygin.Options{Repanic: true}))
+	r.Use(cors.Default())
 
-	// pprof.Register(r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = defaultPort
+	}
 
-	// r.Use(cors.Default())
+	r.GET("/new", func(c *gin.Context) {
+		c.JSON(http.StatusOK, NewIndexHandler())
+	})
 
-	// port := os.Getenv("PORT")
-	// if port == "" {
-	// 	port = defaultPort
-	// }
+	r.GET("/feature_flag", func(c *gin.Context) {
+		c.JSON(http.StatusOK, struct{ Status bool }{Status: false})
+		// flag, ok := c.GetQuery("flag")
 
-	// r.GET("/new", func(c *gin.Context) {
-	// 	c.JSON(http.StatusOK, NewIndexHandler())
-	// })
+		// if !ok {
+		// 	panic(fmt.Errorf("flag was not provided"))
+		// }
 
-	// r.GET("/feature_flag", func(c *gin.Context) {
-	// 	c.JSON(http.StatusOK, struct{ Status bool }{Status: false})
-	// 	// flag, ok := c.GetQuery("flag")
+		// flagValue, err := GetFeatureFlag(flag)
 
-	// 	// if !ok {
-	// 	// 	panic(fmt.Errorf("flag was not provided"))
-	// 	// }
+		// if err != nil {
+		// 	panic(err)
+		// }
 
-	// 	// flagValue, err := GetFeatureFlag(flag)
+		// c.JSON(http.StatusOK, struct {
+		// 	Status bool
+		// }{Status: flagValue})
+	})
 
-	// 	// if err != nil {
-	// 	// 	panic(err)
-	// 	// }
+	r.GET("/all_users", func(c *gin.Context) {
+		c.JSON(http.StatusOK, AllUsersHandler())
+	})
 
-	// 	// c.JSON(http.StatusOK, struct {
-	// 	// 	Status bool
-	// 	// }{Status: flagValue})
-	// })
+	r.GET("/users/:userId", func(c *gin.Context) {
+		userId, err := strconv.ParseInt(c.Param("userId"), 10, 64)
+		if err != nil {
+			panic(err)
+		}
 
-	// r.GET("/all_users", func(c *gin.Context) {
-	// 	c.JSON(http.StatusOK, AllUsersHandler())
-	// })
+		c.JSON(http.StatusOK, UserHandler(userId))
+	})
 
-	// r.GET("/users/:userId", func(c *gin.Context) {
-	// 	userId, err := strconv.ParseInt(c.Param("userId"), 10, 64)
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
+	r.GET("/week/:year/:month/:day", func(c *gin.Context) {
+		year, err := strconv.Atoi(c.Param("year"))
+		if err != nil {
+			panic(err)
+		}
 
-	// 	c.JSON(http.StatusOK, UserHandler(userId))
-	// })
+		month, err := strconv.Atoi(c.Param("month"))
+		if err != nil {
+			panic(err)
+		}
 
-	// r.GET("/week/:year/:month/:day", func(c *gin.Context) {
-	// 	year, err := strconv.Atoi(c.Param("year"))
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
+		day, err := strconv.Atoi(c.Param("day"))
+		if err != nil {
+			panic(err)
+		}
 
-	// 	month, err := strconv.Atoi(c.Param("month"))
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
+		c.JSON(http.StatusOK, WeekTimesHandler(year, month, day))
+	})
 
-	// 	day, err := strconv.Atoi(c.Param("day"))
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	c.JSON(http.StatusOK, WeekTimesHandler(year, month, day))
-	// })
-
-	// r.Run(":" + port)
+	r.Run(":" + port)
 }

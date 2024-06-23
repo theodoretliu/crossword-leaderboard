@@ -1,4 +1,4 @@
-package main
+package scrape
 
 import (
 	"context"
@@ -7,11 +7,10 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
-	"github.com/getsentry/sentry-go"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/exp/slices"
 )
 
@@ -133,7 +132,7 @@ func insertResults(tx pgx.Tx, apiResults []result, userIds []int64, date time.Ti
 	return nil
 }
 
-func dbActionsForDate(date time.Time) error {
+func DbActionsForDate(pool *pgxpool.Pool, date time.Time) error {
 	tx, err := pool.Begin(context.Background())
 	if err != nil {
 		return err
@@ -166,65 +165,4 @@ func dbActionsForDate(date time.Time) error {
 	}
 
 	return tx.Commit(context.Background())
-}
-
-func hoursToSleepTime(hours float64) int64 {
-	return int64(5*hours*hours/576 + 5*hours/24 + 10)
-}
-
-func scrapeDate(date time.Time) {
-	for {
-		timeSince := time.Since(date)
-		time.Sleep(time.Duration(hoursToSleepTime(timeSince.Hours())) * time.Second)
-		err := dbActionsForDate(date)
-		if err != nil {
-			sentry.CaptureException(err)
-		}
-	}
-}
-
-func startScrapers() {
-	minDate := time.Date(MinYear, MinMonth, MinDay, 0, 0, 0, 0, time.UTC)
-	oneDayDuration := 24 * time.Hour
-	today := time.Now().UTC().Truncate(oneDayDuration)
-	iterDate := minDate
-
-	for iterDate.Compare(today) <= 0 {
-		go scrapeDate(iterDate)
-		iterDate = iterDate.AddDate(0, 0, 1)
-	}
-
-	for {
-		if time.Since(today) > oneDayDuration {
-			today = today.AddDate(0, 0, 1)
-			go scrapeDate(today)
-		}
-
-		time.Sleep(10 * time.Second)
-	}
-}
-
-func scrapeAllDays() {
-	minDate := time.Date(MinYear, MinMonth, MinDay, 0, 0, 0, 0, time.UTC)
-	oneDayDuration := time.Duration(int64(24 * 60 * 60 * 1_000_000_000))
-	today := time.Now().UTC().Truncate(oneDayDuration)
-	iterDate := minDate
-
-	var wg sync.WaitGroup
-
-	for iterDate.Compare(today) <= 0 {
-		wg.Add(1)
-		go func(date time.Time) {
-			defer wg.Done()
-			err := dbActionsForDate(date)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}(iterDate)
-
-		fmt.Println(minDate, iterDate)
-		iterDate = iterDate.AddDate(0, 0, 1)
-	}
-
-	wg.Wait()
 }
