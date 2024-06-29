@@ -19,6 +19,18 @@ func main() {
 	}
 
 	minDate := time.Date(scrape.MinYear, scrape.MinMonth, scrape.MinDay, 0, 0, 0, 0, time.UTC)
+
+	if len(os.Args) == 2 {
+		inputDate := os.Args[1]
+
+		minDate, err = time.Parse("2006-01-02", inputDate)
+
+		if err != nil {
+			fmt.Println("Error parsing date:", err)
+			os.Exit(1)
+		}
+	}
+
 	oneDayDuration := time.Duration(int64(24 * 60 * 60 * 1_000_000_000))
 	today := time.Now().UTC().Truncate(oneDayDuration)
 	iterDate := minDate
