@@ -24,12 +24,6 @@ services:
       - DSN=https://514620b5bde14216af129b62e81ffb0e@o370716.ingest.sentry.io/5181475
     entrypoint: /bin/scrapeall.bin
     profiles: ["scrapeall"]
-  web:
-    image: crossword-frontend-server
-    restart: always
-    environment:
-      - NEXT_PUBLIC_API_URL=https://crossword.theodoretliu.com/api
-    profiles: ["production"]
   caddy:
     image: caddy
     volumes:
