@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
@@ -38,8 +39,11 @@ func startScrapers() {
 	}
 
 	for {
+		fmt.Println(time.Since(today))
 		if time.Since(today) > oneDayDuration {
+			fmt.Println("adding a new scraper")
 			today = today.AddDate(0, 0, 1)
+			fmt.Println("new date: ", today)
 			go scrapeDate(pool, today)
 		}
 

@@ -7,7 +7,6 @@ export const headerContainer = css`
 `;
 
 export const headerTitle = css`
-  font-family: Roboto, sans-serif;
   text-decoration: none;
   color: black;
   padding: 20px;
