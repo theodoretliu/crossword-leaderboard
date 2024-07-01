@@ -22,6 +22,7 @@ func scrapeDate(pool *pgxpool.Pool, date time.Time) {
 		time.Sleep(time.Duration(hoursToSleepTime(timeSince.Hours())) * time.Second)
 		err := scrape.DbActionsForDate(pool, date)
 		if err != nil {
+			fmt.Println(err)
 			sentry.CaptureException(err)
 		}
 	}
@@ -54,10 +55,21 @@ func startScrapers() {
 var pool *pgxpool.Pool
 
 func main() {
-	var err error
+	err := sentry.Init(sentry.ClientOptions{
+		Dsn:              os.Getenv("DSN"),
+		AttachStacktrace: true,
+	})
+	if err != nil {
+		panic(err)
+	}
+
 	pool, err = pgxpool.New(context.Background(), os.Getenv("DB_URL"))
+
+	defer sentry.Recover()
+
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	startScrapers()
 }
