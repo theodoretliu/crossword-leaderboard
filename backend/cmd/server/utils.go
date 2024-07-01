@@ -12,7 +12,7 @@ func getFirstDayOfWeek(givenDay time.Time) time.Time {
 	year, month, day := givenDay.Date()
 	truncated := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
 
-	for truncated.Weekday() != time.Sunday {
+	for truncated.Weekday() != time.Monday {
 		truncated = truncated.AddDate(0, 0, -1)
 	}
 

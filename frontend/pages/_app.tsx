@@ -8,7 +8,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <React.Fragment>
       <Head>
-        <title>Mini Crossword Leaderboard</title>
+        <title>Teddy's Mini Leaderboard</title>
       </Head>
       <Component {...pageProps} />
     </React.Fragment>

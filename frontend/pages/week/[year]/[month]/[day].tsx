@@ -10,7 +10,7 @@ import * as s from "superstruct";
 import { Table } from "components/table";
 import { H2 } from "components/h2";
 
-import * as styles from "components/[day]_styles";
+import { datesToFormat } from "@/utils";
 
 dayjs.extend(utc);
 
@@ -47,14 +47,17 @@ export default function Week({
     Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day))
   );
 
+  let dates = datesToFormat(initialData.DaysOfTheWeek);
+
   return (
     <div>
       <Header />
-      <H2>Week of {date.format("dddd, MMMM D, YYYY")}</H2>
-      <Table
-        daysOfTheWeek={initialData.DaysOfTheWeek}
-        rows={initialData.Users}
-      />
+
+      <h2 className="text-lg font-semibold px-4 pb-4">
+        Week of {date.format("dddd, MMMM D, YYYY")}
+      </h2>
+
+      <Table daysOfTheWeek={dates} rows={initialData.Users} />
     </div>
   );
 }

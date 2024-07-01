@@ -9,6 +9,9 @@ import * as s from "superstruct";
 import { Table } from "components/table";
 import { datesToFormat } from "utils";
 import { assert } from "superstruct";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft } from "lucide-react";
+import Link from "next/link";
 
 dayjs.extend(utc);
 
@@ -47,7 +50,11 @@ function App({ initialData }: { initialData: s.Infer<typeof ResponseType> }) {
   });
 
   if (error) {
-    return <div>hello</div>;
+    return (
+      <div className="fixed top-0 bottom-0 left-0 right-0 flex items-center justify-center">
+        Something went wrong :(
+      </div>
+    );
   }
 
   if (!data) {
@@ -59,6 +66,7 @@ function App({ initialData }: { initialData: s.Infer<typeof ResponseType> }) {
   return (
     <React.Fragment>
       <Header />
+
       <Table daysOfTheWeek={dates} rows={data.Users} />
     </React.Fragment>
   );

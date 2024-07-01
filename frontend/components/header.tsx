@@ -39,7 +39,7 @@ export const Header = () => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <div className="flex-row gap-4 items-center text-lg hidden md:flex">
+      <div className="flex-row gap-4 items-center hidden md:flex">
         <Link href="/previous_weeks" passHref legacyBehavior>
           <a>Previous Weeks</a>
         </Link>

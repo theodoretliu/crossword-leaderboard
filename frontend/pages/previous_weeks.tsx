@@ -1,12 +1,9 @@
 import { jsx } from "@emotion/react";
 import { useMemo } from "react";
 import { Header } from "components/header";
-import { H2 } from "components/h2";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import Link from "next/link";
-
-import * as styles from "components/previous_weeks_styles";
 
 dayjs.extend(utc);
 
@@ -14,9 +11,13 @@ export default function PreviousWeeks() {
   const weekStarts = useMemo(() => {
     let weekStarts = [];
 
-    let currentWeek = dayjs.utc().startOf("week");
+    let currentWeek = dayjs.utc().startOf("day");
 
-    for (let i = 0; i < 10; i++) {
+    while (currentWeek.day() !== 1) {
+      currentWeek = currentWeek.subtract(1, "day");
+    }
+
+    for (let i = 0; i < 52; i++) {
       currentWeek = currentWeek.subtract(1, "week");
       weekStarts.push(currentWeek);
     }
@@ -27,19 +28,18 @@ export default function PreviousWeeks() {
   return (
     <div>
       <Header />
-      <H2>Previous Weeks</H2>
 
-      <div css={styles.linkContainer}>
+      <h2 className="px-4 text-lg font-semibold pb-4">Previous Weeks</h2>
+
+      <div className="flex flex-col gap-1 px-4 pb-4">
         {weekStarts.map((weekStart) => (
           <Link
             key={weekStart.toString()}
             href={`/week/${weekStart.year()}/${
               weekStart.month() + 1
             }/${weekStart.date()}`}
-            passHref
-            legacyBehavior
           >
-            <a css={styles.link}>{weekStart.format("MMMM D, YYYY")}</a>
+            {weekStart.format("MMMM D, YYYY")}
           </Link>
         ))}
       </div>
