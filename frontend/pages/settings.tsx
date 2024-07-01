@@ -1,23 +1,21 @@
 import { jsx, css } from "@emotion/react";
 import React, { useState, useEffect } from "react";
-import { Header } from "components/header";
+import { Header } from "@/components/header";
 import Head from "next/head";
 import useSWR from "swr";
-import { H2 } from "components/h2";
-import * as s from "superstruct";
+import * as z from "zod";
 import { API_URL } from "api";
+import { Button } from "@/components/ui/button";
 
-const UsersList = s.object({
-  Users: s.array(s.string()),
+const UsersList = z.object({
+  Users: z.array(z.object({ Id: z.number(), Name: z.string() })),
 });
 
 async function fetcher(key: string) {
   const response = await fetch(API_URL + key);
   const json = await response.json();
 
-  s.assert(json, UsersList);
-
-  return json;
+  return UsersList.parse(json);
 }
 
 export async function getServerSideProps() {
@@ -35,30 +33,18 @@ function UserRow(props: UserRowProps) {
   const { name, onClick } = props;
 
   return (
-    <div
-      css={css`
-        display: block;
-        padding: 5px 0px;
-      `}
-    >
-      <span
-        css={css`
-          cursor: pointer;
-        `}
-        onClick={onClick}
-      >
-        {name}
-      </span>
-    </div>
+    <Button variant="link" onClick={onClick} className="w-fit px-0" size="sm">
+      {name}
+    </Button>
   );
 }
 
 interface SettingsProps {
-  initialData: { Users: Array<string> };
+  initialData: z.infer<typeof UsersList>;
 }
 
 function Settings({ initialData }: SettingsProps) {
-  const [removedUsers, setRemovedUsers] = useState<string[]>(() => {
+  const [removedUsers, setRemovedUsers] = useState<number[]>(() => {
     if (typeof window === "undefined") {
       return [];
     }
@@ -69,16 +55,36 @@ function Settings({ initialData }: SettingsProps) {
       return [];
     }
 
-    return JSON.parse(parsed);
+    const schema = z.array(z.number());
+
+    const stored = JSON.parse(parsed);
+
+    const validated = schema.safeParse(stored);
+
+    if (validated.success) {
+      return validated.data;
+    }
+
+    return [];
   });
 
   useEffect(() => {
     window.localStorage.setItem("removedUsers", JSON.stringify(removedUsers));
   }, [removedUsers]);
 
+  const [onClient, setIsOnClient] = useState(false);
+
+  useEffect(() => {
+    setIsOnClient(true);
+  }, []);
+
   const { error, data } = useSWR("/all_users", fetcher, {
     fallbackData: initialData,
   });
+
+  if (!onClient) {
+    return null;
+  }
 
   if (error) {
     return (
@@ -93,84 +99,67 @@ function Settings({ initialData }: SettingsProps) {
     return "loading";
   }
 
-  let usernames = data.Users;
+  let users = data.Users;
 
-  let allowedUsers = usernames.filter((user) => !removedUsers.includes(user));
-  allowedUsers.sort((u1, u2) => u1.localeCompare(u2));
+  let allowedUsers = users.filter((user) => !removedUsers.includes(user.Id));
+  allowedUsers.sort((u1, u2) => u1.Name.localeCompare(u2.Name));
 
-  let blockedUsers = usernames.filter((user) => removedUsers.includes(user));
+  let blockedUsers = users.filter((user) => removedUsers.includes(user.Id));
 
-  blockedUsers.sort((u1, u2) => u1.localeCompare(u2));
-
-  const buttonStyle = css`
-    padding: 20px;
-    font-weight: bold;
-    color: white;
-    background-color: #4d88f8;
-    border-radius: 5px;
-    width: fit-content;
-    cursor: pointer;
-    margin-bottom: 10px;
-  `;
+  blockedUsers.sort((u1, u2) => u1.Name.localeCompare(u2.Name));
 
   return (
     <React.Fragment>
       <Head>
         <title>Mini Crossword Leaderboard: Settings</title>
       </Head>
+
       <Header />
-      <H2>Settings</H2>
-      <div
-        css={css`
-          display: grid;
-          width: 100%;
-          grid-template-columns: 1fr 1fr;
-          font-family: Roboto, sans-serif;
-        `}
-      >
-        <div
-          css={css`
-            padding: 0px 20px 20px 20px;
-            grid-column-start: 1;
-          `}
-        >
-          <h2>Shown (Click to remove)</h2>
-          <div
-            css={buttonStyle}
-            onClick={() => setRemovedUsers(usernames.map((user) => user))}
+
+      <h2 className="text-lg font-semibold px-4 pb-4">Settings</h2>
+
+      <div className="w-full grid grid-cols-2 px-4 gap-4 pb-4">
+        <div className="flex flex-col gap-4">
+          <h2>Shown (Click name to remove)</h2>
+
+          <Button
+            onClick={() => setRemovedUsers(users.map((user) => user.Id))}
+            className="w-fit"
           >
             Remove all
+          </Button>
+
+          <div className="flex flex-col gap-1">
+            {allowedUsers.map((user) => (
+              <UserRow
+                key={user.Id}
+                name={user.Name}
+                onClick={() => setRemovedUsers([...removedUsers, user.Id])}
+              />
+            ))}
           </div>
-          {allowedUsers.map((user) => (
-            <UserRow
-              key={user}
-              name={user}
-              onClick={() => setRemovedUsers([...removedUsers, user])}
-            />
-          ))}
         </div>
 
-        <div
-          css={css`
-            padding: 0px 20px 20px 20px;
-            grid-column-start: 2;
-          `}
-        >
-          <h2>Hidden (Click to restore)</h2>
-          <div css={buttonStyle} onClick={() => setRemovedUsers([])}>
+        <div className="flex flex-col gap-4">
+          <h2>Hidden (Click name to restore)</h2>
+
+          <Button onClick={() => setRemovedUsers([])} className="w-fit">
             Restore all
+          </Button>
+
+          <div className="flex flex-col gap-1">
+            {blockedUsers.map((user) => (
+              <UserRow
+                key={user.Id}
+                name={user.Name}
+                onClick={() =>
+                  setRemovedUsers(
+                    removedUsers.filter((userId) => userId !== user.Id)
+                  )
+                }
+              />
+            ))}
           </div>
-          {blockedUsers.map((user) => (
-            <UserRow
-              key={user}
-              name={user}
-              onClick={() =>
-                setRemovedUsers(
-                  removedUsers.filter((username) => username !== user)
-                )
-              }
-            />
-          ))}
         </div>
       </div>
     </React.Fragment>

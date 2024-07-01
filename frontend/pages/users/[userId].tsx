@@ -3,10 +3,9 @@ import { useRouter } from "next/router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { GetServerSideProps } from "next";
-import { Header } from "components/header";
+import { Header } from "@/components/header";
 import { API_URL } from "api";
 import * as z from "zod";
-import { H2 } from "components/h2";
 import useSWR from "swr";
 import {
   Table,

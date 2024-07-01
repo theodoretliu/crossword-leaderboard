@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { jsx } from "@emotion/react";
-import { Header } from "components/header";
+import { Header } from "@/components/header";
 import { API_URL } from "api";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import useSWR from "swr";
 import * as s from "superstruct";
-import { Table } from "components/table";
+import { Table } from "@/components/table";
 import { datesToFormat } from "utils";
 import { assert } from "superstruct";
 import { Button } from "@/components/ui/button";

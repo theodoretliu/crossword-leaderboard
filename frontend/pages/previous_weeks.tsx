@@ -1,6 +1,6 @@
 import { jsx } from "@emotion/react";
 import { useMemo } from "react";
-import { Header } from "components/header";
+import { Header } from "@/components/header";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import Link from "next/link";
