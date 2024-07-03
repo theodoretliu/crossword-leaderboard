@@ -86,14 +86,11 @@ func min(x, y int64) int64 {
 func WeeklyAverage(times []int32, weeksWorstTimes []int32) int32 {
 	totalSquares := 0
 	totalTime := int32(0)
-	for i := 0; i < len(weeksWorstTimes); i++ {
-		if i < len(times) && times[i] != -1 {
-			totalTime += times[i]
-		} else if weeksWorstTimes[i] != -1 {
-			totalTime += weeksWorstTimes[i] + 1
-		}
 
-		if weeksWorstTimes[i] != -1 {
+	for i, time := range times {
+		if time != -1 {
+			totalTime += time
+
 			if i != 6 {
 				totalSquares += 25
 			} else {
@@ -103,5 +100,4 @@ func WeeklyAverage(times []int32, weeksWorstTimes []int32) int32 {
 	}
 
 	return int32(math.Round(float64(totalTime) / float64(totalSquares) * float64(25)))
-
 }

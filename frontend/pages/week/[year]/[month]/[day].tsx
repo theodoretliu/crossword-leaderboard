@@ -6,7 +6,7 @@ import { GetServerSideProps } from "next";
 import { Header } from "@/components/header";
 import { API_URL } from "api";
 import { ResponseType } from "pages/index";
-import * as s from "superstruct";
+import * as z from "zod";
 import { Table } from "@/components/table";
 import { datesToFormat } from "@/utils";
 
@@ -16,9 +16,7 @@ async function fetcher(key: string) {
   const res = await fetch(API_URL + key);
   const json = await res.json();
 
-  s.assert(json, ResponseType);
-
-  return json;
+  return ResponseType.parse(json);
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
@@ -31,7 +29,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 export default function Week({
   initialData,
 }: {
-  initialData: s.Infer<typeof ResponseType>;
+  initialData: z.infer<typeof ResponseType>;
 }) {
   const router = useRouter();
 

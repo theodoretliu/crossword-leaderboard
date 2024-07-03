@@ -5,36 +5,34 @@ import { API_URL } from "api";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import useSWR from "swr";
-import * as s from "superstruct";
+import * as z from "zod";
 import { Table } from "@/components/table";
 import { datesToFormat } from "utils";
-import { assert } from "superstruct";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
 dayjs.extend(utc);
 
-export const UserType = s.object({
-  UserId: s.number(),
-  Username: s.string(),
-  WeeksTimes: s.array(s.number()),
-  WeeksAverage: s.number(),
-  Elo: s.number(),
+export const UserType = z.object({
+  UserId: z.number(),
+  Username: z.string(),
+  WeeksTimes: z.array(z.number()),
+  WeeksAverage: z.number(),
+  Elo: z.number(),
+  Qualified: z.boolean(),
 });
 
-export const ResponseType = s.object({
-  Users: s.array(UserType),
-  DaysOfTheWeek: s.array(s.string()),
+export const ResponseType = z.object({
+  Users: z.array(UserType),
+  DaysOfTheWeek: z.array(z.string()),
 });
 
 async function fetcher(key: string) {
   const res = await fetch(API_URL + key);
   const json = await res.json();
 
-  assert(json, ResponseType);
-
-  return json;
+  return ResponseType.parse(json);
 }
 
 export async function getServerSideProps() {
@@ -43,7 +41,7 @@ export async function getServerSideProps() {
   return { props: { initialData } };
 }
 
-function App({ initialData }: { initialData: s.Infer<typeof ResponseType> }) {
+function App({ initialData }: { initialData: z.infer<typeof ResponseType> }) {
   const { error, data } = useSWR("/new", fetcher, {
     fallbackData: initialData,
     refreshInterval: 10 * 1000,

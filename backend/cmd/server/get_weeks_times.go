@@ -13,6 +13,7 @@ type userInfo struct {
 	WeeksTimes   []int32
 	WeeksAverage int32
 	Elo          float64
+	Qualified    bool
 }
 
 type weeksInfo struct {
@@ -56,7 +57,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 
 	for _, row := range resRows {
 		if row.Name != currentUser {
-			result = append(result, userInfo{row.Id, row.Name, []int32{}, 0, 1000.0})
+			result = append(result, userInfo{row.Id, row.Name, []int32{}, 0, 1000.0, false})
 			currentUser = row.Name
 			dateIndex = 0
 		}
@@ -68,6 +69,37 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 
 		result[len(result)-1].WeeksTimes = append(result[len(result)-1].WeeksTimes, row.TimeInSeconds)
 		dateIndex++
+	}
+
+	saturdayPossible := time.Now().UTC().After(daysOfTheWeek[5])
+	daysElapsed := 0
+
+	today := time.Now().UTC().Round(24 * time.Hour)
+	var curDay time.Time
+
+	if daysOfTheWeek[6].After(today) {
+		curDay = today
+	} else {
+		curDay = daysOfTheWeek[6]
+	}
+
+	daysElapsed = int((curDay.Sub(daysOfTheWeek[0])).Hours())/24 + 1
+
+	for i := range result {
+		user := &result[i]
+		numDaysCompleted := 0
+
+		for _, time := range user.WeeksTimes {
+			if time != -1 {
+				numDaysCompleted++
+			}
+		}
+
+		if saturdayPossible {
+			user.Qualified = len(user.WeeksTimes) > 5 && user.WeeksTimes[5] != -1 && numDaysCompleted >= daysElapsed-1-2
+		} else {
+			user.Qualified = numDaysCompleted >= daysElapsed-2
+		}
 	}
 
 	weeksWorstTimes := GetWeeksWorstTimes(daysOfTheWeek)

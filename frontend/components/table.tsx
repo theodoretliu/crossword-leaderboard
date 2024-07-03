@@ -1,6 +1,6 @@
 import { jsx } from "@emotion/react";
 import { useState } from "react";
-import * as s from "superstruct";
+import * as z from "zod";
 import { datesToFormat, padRight, secondsToMinutes } from "utils";
 import Link from "next/link";
 import { UserType } from "pages/index";
@@ -14,10 +14,12 @@ import {
 } from "./ui/table";
 import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
+import _sortBy from "lodash/sortBy";
+import _reversed from "lodash/reverse";
 
 interface TableProps {
   daysOfTheWeek: Array<string>;
-  rows: Array<s.Infer<typeof UserType>>;
+  rows: Array<z.infer<typeof UserType>>;
 }
 
 interface RowProps {
@@ -53,7 +55,7 @@ function Row({ UserId, Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
 
 export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
   const [{ orderBy, ascending }, setOrder] = useState<{
-    orderBy: keyof s.Infer<typeof UserType> | number;
+    orderBy: keyof z.infer<typeof UserType> | number;
     ascending: boolean;
   }>({
     orderBy: "WeeksAverage",
@@ -88,36 +90,31 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
       return newObj;
     });
 
-  newUsers.sort((user1, user2) => {
-    let user1data =
-      user1[orderBy] === -1 || user1[orderBy] === undefined
-        ? 10000
-        : user1[orderBy];
-    let user2data =
-      user2[orderBy] === -1 || user2[orderBy] === undefined
-        ? 10000
-        : user2[orderBy];
-
-    let diff;
-
-    if (typeof user1data === "string" && typeof user2data === "string") {
-      diff = user1data.localeCompare(user2data);
-    } else if (typeof user1data === "number" && typeof user2data === "number") {
-      diff = user1data - user2data;
+  let sortedUsers = (() => {
+    let prelimSort;
+    if (orderBy === "WeeksAverage") {
+      prelimSort = _sortBy(newUsers, [
+        (user) => (user.Qualified ? 0 : 1),
+        "WeeksAverage",
+      ]);
+    } else if (orderBy === "Username") {
+      prelimSort = _sortBy(newUsers, orderBy);
     } else {
-      diff = 0;
+      prelimSort = _sortBy(newUsers, (user) =>
+        user[orderBy] === -1 ? 10000 : user[orderBy]
+      );
     }
 
     if (ascending) {
-      return diff;
+      return prelimSort;
     }
 
-    return -diff;
-  });
+    return _reversed(prelimSort);
+  })();
 
   const headers: Array<{
     title: string;
-    key: keyof s.Infer<typeof UserType> | number;
+    key: keyof z.infer<typeof UserType> | number;
   }> = [
     { title: "Name", key: "Username" },
     ...daysOfTheWeek.map((date, i) => ({ title: date, key: i })),
@@ -156,7 +153,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
         </TableHeader>
 
         <TableBody>
-          {newUsers.map((user, i) => (
+          {sortedUsers.map((user, i) => (
             <Row {...user} key={JSON.stringify(user)} />
           ))}
         </TableBody>
