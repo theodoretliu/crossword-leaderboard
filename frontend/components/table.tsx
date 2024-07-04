@@ -16,6 +16,8 @@ import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import _sortBy from "lodash/sortBy";
 import _reversed from "lodash/reverse";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
+import { CircleHelp } from "lucide-react";
 
 interface TableProps {
   daysOfTheWeek: Array<string>;
@@ -93,10 +95,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
   let sortedUsers = (() => {
     let prelimSort;
     if (orderBy === "WeeksAverage") {
-      prelimSort = _sortBy(newUsers, [
-        (user) => (user.Qualified ? 0 : 1),
-        "WeeksAverage",
-      ]);
+      prelimSort = _sortBy(newUsers, ["WeeksAverage"]);
     } else if (orderBy === "Username") {
       prelimSort = _sortBy(newUsers, orderBy);
     } else {
@@ -111,6 +110,9 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
 
     return _reversed(prelimSort);
   })();
+
+  let qualifiedUsers = sortedUsers.filter((user) => user.Qualified);
+  let unqualifiedUsers = sortedUsers.filter((user) => !user.Qualified);
 
   const headers: Array<{
     title: string;
@@ -153,11 +155,78 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
         </TableHeader>
 
         <TableBody>
-          {sortedUsers.map((user, i) => (
-            <Row {...user} key={JSON.stringify(user)} />
-          ))}
+          {orderBy !== "WeeksAverage" &&
+            sortedUsers.map((user, i) => (
+              <Row {...user} key={JSON.stringify(user)} />
+            ))}
+
+          {orderBy === "WeeksAverage" &&
+            (qualifiedUsers.length > 0 ? (
+              <>
+                {qualifiedUsers.map((user, i) => (
+                  <Row {...user} key={JSON.stringify(user)} />
+                ))}
+              </>
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9}>
+                  No users <QualificationTooltip text="qualified" /> for the
+                  weekly ranking :(
+                </TableCell>
+              </TableRow>
+            ))}
+
+          {orderBy === "WeeksAverage" && (
+            <TableRow className="bg-blue-500 hover:bg-unset">
+              <TableCell
+                colSpan={9}
+                className="h-2 p-0 hover:unset"
+              ></TableCell>
+            </TableRow>
+          )}
+
+          {orderBy === "WeeksAverage" &&
+            (unqualifiedUsers.length > 0 ? (
+              <>
+                <TableRow>
+                  <TableCell colSpan={9}>
+                    Users below blue line did not{" "}
+                    <QualificationTooltip text="qualify" /> for weekly ranking.
+                  </TableCell>
+                </TableRow>
+                {unqualifiedUsers.map((user, i) => (
+                  <Row {...user} key={JSON.stringify(user)} />
+                ))}
+              </>
+            ) : (
+              <TableRow>
+                <TableCell colSpan={9}>
+                  All users have <QualificationTooltip text="qualified" /> for
+                  the weekly ranking!
+                </TableCell>
+              </TableRow>
+            ))}
         </TableBody>
       </UITable>
     </div>
+  );
+};
+
+const QualificationTooltip = ({ text }: { text?: string }) => {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-flex flex-row items-center">
+          {text} <sup className="underline">?</sup>
+        </span>
+      </TooltipTrigger>
+
+      <TooltipContent>
+        <p>
+          To qualify for the weekly ranking, users must complete at least 3 out
+          of 6 5x5 minis and the 7x7 Saturday mini
+        </p>
+      </TooltipContent>
+    </Tooltip>
   );
 };

@@ -11,6 +11,7 @@ import { datesToFormat } from "utils";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 dayjs.extend(utc);
 
