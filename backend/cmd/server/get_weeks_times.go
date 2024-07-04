@@ -96,7 +96,7 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 		}
 
 		if saturdayPossible {
-			user.Qualified = len(user.WeeksTimes) > 5 && user.WeeksTimes[5] != -1 && numDaysCompleted >= daysElapsed-1-3
+			user.Qualified = len(user.WeeksTimes) > 5 && user.WeeksTimes[5] != -1 && numDaysCompleted >= daysElapsed-3
 		} else {
 			user.Qualified = numDaysCompleted >= daysElapsed-3
 		}
