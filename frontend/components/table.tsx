@@ -18,6 +18,7 @@ import _sortBy from "lodash/sortBy";
 import _reversed from "lodash/reverse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { CircleHelp } from "lucide-react";
+import { useRemovedUsers } from "@/hooks/use_removed_users";
 
 interface TableProps {
   daysOfTheWeek: Array<string>;
@@ -66,22 +67,10 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
 
   let users = rows.slice();
 
-  const [removedUsers, _] = useState(() => {
-    if (typeof window !== "undefined") {
-      let parsed = window.localStorage.getItem("removedUsers");
-
-      if (!parsed) {
-        return [];
-      }
-
-      return JSON.parse(parsed);
-    }
-
-    return [];
-  });
+  const [removedUsers] = useRemovedUsers();
 
   let newUsers = users
-    .filter((user) => !removedUsers.includes(user.Username))
+    .filter((user) => !removedUsers.includes(user.UserId))
     .filter((user) => user.WeeksTimes.length > 0)
     .map((user) => {
       let newObj: typeof user & { [key: number]: number } = { ...user };
@@ -155,57 +144,70 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
         </TableHeader>
 
         <TableBody>
-          {orderBy !== "WeeksAverage" &&
-            sortedUsers.map((user, i) => (
-              <Row {...user} key={JSON.stringify(user)} />
-            ))}
-
-          {orderBy === "WeeksAverage" &&
-            (qualifiedUsers.length > 0 ? (
-              <>
-                {qualifiedUsers.map((user, i) => (
-                  <Row {...user} key={JSON.stringify(user)} />
-                ))}
-              </>
-            ) : (
-              <TableRow>
-                <TableCell colSpan={9}>
-                  No users <QualificationTooltip text="qualified" /> for the
-                  weekly ranking :(
-                </TableCell>
-              </TableRow>
-            ))}
-
-          {orderBy === "WeeksAverage" && (
-            <TableRow className="bg-blue-500 hover:bg-unset">
-              <TableCell
-                colSpan={9}
-                className="h-2 p-0 hover:unset"
-              ></TableCell>
+          {newUsers.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={9}>
+                No recorded times yet for the week!
+              </TableCell>
             </TableRow>
           )}
 
-          {orderBy === "WeeksAverage" &&
-            (unqualifiedUsers.length > 0 ? (
-              <>
-                <TableRow>
-                  <TableCell colSpan={9}>
-                    Users below blue line did not{" "}
-                    <QualificationTooltip text="qualify" /> for weekly ranking.
-                  </TableCell>
-                </TableRow>
-                {unqualifiedUsers.map((user, i) => (
+          {newUsers.length > 0 && (
+            <>
+              {orderBy !== "WeeksAverage" &&
+                sortedUsers.map((user, i) => (
                   <Row {...user} key={JSON.stringify(user)} />
                 ))}
-              </>
-            ) : (
-              <TableRow>
-                <TableCell colSpan={9}>
-                  All users have <QualificationTooltip text="qualified" /> for
-                  the weekly ranking!
-                </TableCell>
-              </TableRow>
-            ))}
+
+              {orderBy === "WeeksAverage" &&
+                (qualifiedUsers.length > 0 ? (
+                  <>
+                    {qualifiedUsers.map((user, i) => (
+                      <Row {...user} key={JSON.stringify(user)} />
+                    ))}
+                  </>
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9}>
+                      No users <QualificationTooltip text="qualified" /> for the
+                      weekly ranking :(
+                    </TableCell>
+                  </TableRow>
+                ))}
+
+              {orderBy === "WeeksAverage" && (
+                <TableRow className="bg-blue-500 hover:bg-unset">
+                  <TableCell
+                    colSpan={9}
+                    className="h-2 p-0 hover:unset"
+                  ></TableCell>
+                </TableRow>
+              )}
+
+              {orderBy === "WeeksAverage" &&
+                (unqualifiedUsers.length > 0 ? (
+                  <>
+                    <TableRow>
+                      <TableCell colSpan={9}>
+                        Users below blue line did not{" "}
+                        <QualificationTooltip text="qualify" /> for weekly
+                        ranking.
+                      </TableCell>
+                    </TableRow>
+                    {unqualifiedUsers.map((user, i) => (
+                      <Row {...user} key={JSON.stringify(user)} />
+                    ))}
+                  </>
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={9}>
+                      All users have <QualificationTooltip text="qualified" />{" "}
+                      for the weekly ranking!
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </>
+          )}
         </TableBody>
       </UITable>
     </div>

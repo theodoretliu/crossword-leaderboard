@@ -6,6 +6,7 @@ import useSWR from "swr";
 import * as z from "zod";
 import { API_URL } from "api";
 import { Button } from "@/components/ui/button";
+import { useRemovedUsers } from "@/hooks/use_removed_users";
 
 const UsersList = z.object({
   Users: z.array(z.object({ Id: z.number(), Name: z.string() })),
@@ -44,33 +45,7 @@ interface SettingsProps {
 }
 
 function Settings({ initialData }: SettingsProps) {
-  const [removedUsers, setRemovedUsers] = useState<number[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    let parsed = window.localStorage.getItem("removedUsers");
-
-    if (!parsed) {
-      return [];
-    }
-
-    const schema = z.array(z.number());
-
-    const stored = JSON.parse(parsed);
-
-    const validated = schema.safeParse(stored);
-
-    if (validated.success) {
-      return validated.data;
-    }
-
-    return [];
-  });
-
-  useEffect(() => {
-    window.localStorage.setItem("removedUsers", JSON.stringify(removedUsers));
-  }, [removedUsers]);
+  const [removedUsers, setRemovedUsers] = useRemovedUsers();
 
   const [onClient, setIsOnClient] = useState(false);
 
