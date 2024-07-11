@@ -44,7 +44,7 @@ func getResultsForDate(date time.Time, cookie string) ([]result, error) {
 
 	request.Header = header
 
-	client := http.Client{}
+	client := http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(request)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,11 @@ func getResultsForDate(date time.Time, cookie string) ([]result, error) {
 	}
 
 	var rawData nytResponse
-	json.Unmarshal(body, &rawData)
+	err = json.Unmarshal(body, &rawData)
+
+	if err != nil {
+		return nil, err
+	}
 
 	return rawData.Data, nil
 }
