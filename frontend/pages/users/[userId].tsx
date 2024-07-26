@@ -19,6 +19,7 @@ import { dateToFormat, secondsToMinutes } from "utils";
 
 const StatsType = z.object({
   Average: z.number(),
+  Median: z.number(),
   Best: z.number(),
   Worst: z.number(),
   NumCompleted: z.number(),
@@ -93,7 +94,7 @@ export default function User({
               <TableRow>
                 <TableHead>Category</TableHead>
 
-                <TableHead>Average Time (s)</TableHead>
+                <TableHead>Median Time (s)</TableHead>
                 <TableHead>Best Time (s)</TableHead>
                 <TableHead>Worst Time (s)</TableHead>
                 <TableHead>Number completed</TableHead>
@@ -104,7 +105,7 @@ export default function User({
               <TableRow>
                 <TableCell>Minis (5x5)</TableCell>
                 <TableCell>
-                  {secondsToMinutes(data.MiniStats.Average, true)}
+                  {secondsToMinutes(data.MiniStats.Median, true)}
                 </TableCell>
                 <TableCell>{secondsToMinutes(data.MiniStats.Best)}</TableCell>
                 <TableCell>{secondsToMinutes(data.MiniStats.Worst)}</TableCell>
@@ -114,7 +115,7 @@ export default function User({
               <TableRow>
                 <TableCell>Saturdays (7x7)</TableCell>
                 <TableCell>
-                  {secondsToMinutes(data.SaturdayStats.Average, true)}
+                  {secondsToMinutes(data.SaturdayStats.Median, true)}
                 </TableCell>
                 <TableCell>
                   {secondsToMinutes(data.SaturdayStats.Best)}
@@ -128,7 +129,7 @@ export default function User({
               <TableRow>
                 <TableCell>Overall</TableCell>
                 <TableCell>
-                  {secondsToMinutes(data.OverallStats.Average, true)}
+                  {secondsToMinutes(data.OverallStats.Median, true)}
                 </TableCell>
                 <TableCell>
                   {secondsToMinutes(data.OverallStats.Best)}

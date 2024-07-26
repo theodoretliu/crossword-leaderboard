@@ -3,24 +3,24 @@ import useSWR from "swr";
 
 import { API_URL } from "api";
 
-import * as s from "superstruct";
+import * as z from "zod";
 
-const FeatureFlagType = s.object({
-  Status: s.boolean(),
+const FeatureFlagType = z.object({
+  Status: z.boolean(),
 });
 
-export function useFeatureFlag(
-  featureFlag: string
-): { loading: boolean; status: boolean; error?: any } {
+export function useFeatureFlag(featureFlag: string): {
+  loading: boolean;
+  status: boolean;
+  error?: any;
+} {
   const { data, error } = useSWR(featureFlag, async (flag: string) => {
     let res = await fetch(
       `${API_URL}/feature_flag?flag=${encodeURIComponent(flag)}`
     );
     let json = await res.json();
 
-    s.assert(json, FeatureFlagType);
-
-    return json;
+    return FeatureFlagType.parse(json);
   });
 
   if (error) {

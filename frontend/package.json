@@ -30,7 +30,6 @@
     "react-router": "^6.18.0",
     "react-router-dom": "^6.18.0",
     "recharts": "^2.9.3",
-    "superstruct": "^1.0.3",
     "swr": "^2.2.4",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
