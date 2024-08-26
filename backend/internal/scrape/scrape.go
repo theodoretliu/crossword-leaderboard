@@ -142,6 +142,8 @@ func DbActionsForDate(pool *pgxpool.Pool, date time.Time) error {
 		return err
 	}
 
+	defer tx.Rollback(context.Background())
+
 	var cookie string
 	err = tx.QueryRow(context.Background(), "SELECT value FROM cookies LIMIT 1").Scan(&cookie)
 	if err != nil {
