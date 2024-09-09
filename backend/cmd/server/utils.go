@@ -91,7 +91,7 @@ func WeeklyAverage(times []int32, weeksWorstTimes []int32) int32 {
 		if time != -1 {
 			totalTime += time
 
-			if i != 6 {
+			if i != 5 {
 				totalSquares += 25
 			} else {
 				totalSquares += 49
