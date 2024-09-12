@@ -80,7 +80,7 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
     <div>
       <Header />
 
-      <h1 className="text-lg font-semibold p-4 pt-0">Leaderboard</h1>
+      <h1 className="text-lg font-semibold p-4 pt-0">All-Time Leaderboard</h1>
 
       <Table>
         <TableHeader className="bg-blue-500 [&_tr]:border-none">
