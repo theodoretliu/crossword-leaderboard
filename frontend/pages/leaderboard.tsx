@@ -118,7 +118,14 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
 
         <TableBody>
           {sortedData.map((entry) => (
-            <TableRow key={entry.ID}>
+            <TableRow
+              key={entry.ID}
+              className={
+                entry.Name.toLowerCase() === "everyone"
+                  ? "bg-blue-100 font-semibold hover:bg-blue-100"
+                  : ""
+              }
+            >
               <TableCell>
                 <Link
                   href={`/user/${entry.ID}`}
