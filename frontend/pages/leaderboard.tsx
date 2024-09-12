@@ -128,7 +128,7 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
             >
               <TableCell>
                 <Link
-                  href={`/user/${entry.ID}`}
+                  href={`/users/${entry.ID}`}
                   className="text-primary underline-offset-4 hover:underline"
                 >
                   {entry.Name}

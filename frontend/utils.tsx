@@ -36,7 +36,7 @@ export function padRight<T>(arr: Array<T>, value: T, length: number): Array<T> {
 }
 
 export function dateToFormat(date: string) {
-  return dayjs(date).utc().format("dddd, MMMM D");
+  return dayjs(date).utc().format("dddd, M/D");
 }
 
 export function datesToFormat(dates: Array<string>) {

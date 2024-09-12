@@ -120,7 +120,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
             {headers.map((header, i) => (
               <TableHead
                 className={cn(
-                  "relative p-4 cursor-pointer text-white",
+                  "relative p-4 cursor-pointer text-white whitespace-nowrap",
                   i > 0 && "text-right"
                 )}
                 key={JSON.stringify(header)}
