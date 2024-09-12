@@ -30,9 +30,11 @@ export const Header = () => {
 
         <DropdownMenuContent>
           <DropdownMenuItem asChild>
+            <Link href="/leaderboard">Leaderboard</Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
             <Link href="/previous_weeks">Previous Weeks</Link>
           </DropdownMenuItem>
-
           <DropdownMenuItem asChild>
             <Link href="/settings">Settings</Link>
           </DropdownMenuItem>
@@ -40,10 +42,12 @@ export const Header = () => {
       </DropdownMenu>
 
       <div className="flex-row gap-4 items-center hidden md:flex">
+        <Link href="/leaderboard" passHref legacyBehavior>
+          <a>Leaderboard</a>
+        </Link>
         <Link href="/previous_weeks" passHref legacyBehavior>
           <a>Previous Weeks</a>
         </Link>
-
         <Link href="/settings" passHref legacyBehavior>
           <a>Settings</a>
         </Link>
