@@ -7,17 +7,19 @@ import (
 )
 
 type LeaderboardEntry struct {
-	ID           int64
-	Name         string
-	Percentile10 float64
-	Percentile20 float64
-	Percentile30 float64
-	Percentile40 float64
-	Percentile50 float64
-	Percentile60 float64
-	Percentile70 float64
-	Percentile80 float64
-	Percentile90 float64
+	ID            int64
+	Name          string
+	Percentile0   float64
+	Percentile10  float64
+	Percentile20  float64
+	Percentile30  float64
+	Percentile40  float64
+	Percentile50  float64
+	Percentile60  float64
+	Percentile70  float64
+	Percentile80  float64
+	Percentile90  float64
+	Percentile100 float64
 }
 
 var leaderboardQuery string = `
@@ -32,6 +34,7 @@ WITH average_times AS (
 ), user_percentiles AS (
     SELECT 
     user_id,
+    PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY normalized_time) AS percentile_0,
     PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY normalized_time) AS percentile_10,
     PERCENTILE_CONT(0.8) WITHIN GROUP (ORDER BY normalized_time) AS percentile_20,
     PERCENTILE_CONT(0.7) WITHIN GROUP (ORDER BY normalized_time) AS percentile_30,
@@ -40,13 +43,16 @@ WITH average_times AS (
     PERCENTILE_CONT(0.4) WITHIN GROUP (ORDER BY normalized_time) AS percentile_60,
     PERCENTILE_CONT(0.3) WITHIN GROUP (ORDER BY normalized_time) AS percentile_70,
     PERCENTILE_CONT(0.2) WITHIN GROUP (ORDER BY normalized_time) AS percentile_80,
-    PERCENTILE_CONT(0.1) WITHIN GROUP (ORDER BY normalized_time) AS percentile_90
+    PERCENTILE_CONT(0.1) WITHIN GROUP (ORDER BY normalized_time) AS percentile_90,
+    PERCENTILE_CONT(0) WITHIN GROUP (ORDER BY normalized_time) AS percentile_100
     FROM average_times
+    WHERE normalized_time > 2
     GROUP BY user_id
 ), all_percentiles AS (
     SELECT 
     -1 AS user_id,
     'Everyone' AS name,
+    PERCENTILE_CONT(1) WITHIN GROUP (ORDER BY normalized_time) AS percentile_0,
     PERCENTILE_CONT(0.9) WITHIN GROUP (ORDER BY normalized_time) AS percentile_10,
     PERCENTILE_CONT(0.8) WITHIN GROUP (ORDER BY normalized_time) AS percentile_20,
     PERCENTILE_CONT(0.7) WITHIN GROUP (ORDER BY normalized_time) AS percentile_30,
@@ -55,10 +61,25 @@ WITH average_times AS (
     PERCENTILE_CONT(0.4) WITHIN GROUP (ORDER BY normalized_time) AS percentile_60,
     PERCENTILE_CONT(0.3) WITHIN GROUP (ORDER BY normalized_time) AS percentile_70,
     PERCENTILE_CONT(0.2) WITHIN GROUP (ORDER BY normalized_time) AS percentile_80,
-    PERCENTILE_CONT(0.1) WITHIN GROUP (ORDER BY normalized_time) AS percentile_90
+    PERCENTILE_CONT(0.1) WITHIN GROUP (ORDER BY normalized_time) AS percentile_90,
+    PERCENTILE_CONT(0) WITHIN GROUP (ORDER BY normalized_time) AS percentile_100
     FROM average_times
+    WHERE normalized_time > 2
 )
-SELECT users.id, users.name, user_percentiles.percentile_10, user_percentiles.percentile_20, user_percentiles.percentile_30, user_percentiles.percentile_40, user_percentiles.percentile_50, user_percentiles.percentile_60, user_percentiles.percentile_70, user_percentiles.percentile_80, user_percentiles.percentile_90
+SELECT 
+    users.id,
+    users.name,
+    user_percentiles.percentile_0,
+    user_percentiles.percentile_10,
+    user_percentiles.percentile_20,
+    user_percentiles.percentile_30,
+    user_percentiles.percentile_40,
+    user_percentiles.percentile_50,
+    user_percentiles.percentile_60,
+    user_percentiles.percentile_70,
+    user_percentiles.percentile_80,
+    user_percentiles.percentile_90,
+    user_percentiles.percentile_100
 FROM user_percentiles
 JOIN users ON user_percentiles.user_id = users.id
 UNION ALL

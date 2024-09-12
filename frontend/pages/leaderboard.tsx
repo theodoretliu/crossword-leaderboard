@@ -13,10 +13,12 @@ import {
 } from "@/components/ui/table";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { secondsToMinutes } from "@/utils";
 
 const LeaderboardEntrySchema = z.object({
   ID: z.number(),
   Name: z.string(),
+  Percentile0: z.number(),
   Percentile10: z.number(),
   Percentile20: z.number(),
   Percentile30: z.number(),
@@ -26,6 +28,7 @@ const LeaderboardEntrySchema = z.object({
   Percentile70: z.number(),
   Percentile80: z.number(),
   Percentile90: z.number(),
+  Percentile100: z.number(),
 });
 
 const LeaderboardSchema = z.array(LeaderboardEntrySchema);
@@ -86,14 +89,14 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
         <TableHeader className="bg-blue-500 [&_tr]:border-none">
           <TableRow className="hover:bg-nonsense">
             <TableHead colSpan={1} className="h-[30px]"></TableHead>
-            <TableHead colSpan={9} className="text-center text-white h-[30px]">
+            <TableHead colSpan={11} className="text-center text-white h-[30px]">
               Percentiles
             </TableHead>
           </TableRow>
 
           <TableRow className="hover:bg-nonsense">
             <TableHead className="text-white">Name</TableHead>
-            {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((percentile) => (
+            {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((percentile) => (
               <TableHead
                 key={percentile}
                 className={cn(
@@ -134,27 +137,32 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
                   {entry.Name}
                 </Link>
               </TableCell>
-              {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((percentile) => (
-                <TableCell
-                  key={percentile}
-                  title={entry[
-                    `Percentile${percentile}` as keyof Omit<
-                      LeaderboardEntry,
-                      "ID" | "Name"
-                    >
-                  ].toFixed(2)}
-                  className="text-right"
-                >
-                  {Math.round(
-                    entry[
-                      `Percentile${percentile}` as keyof Omit<
-                        LeaderboardEntry,
-                        "ID" | "Name"
-                      >
-                    ]
-                  )}
-                </TableCell>
-              ))}
+              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(
+                (percentile) => (
+                  <TableCell
+                    key={percentile}
+                    title={secondsToMinutes(
+                      entry[
+                        `Percentile${percentile}` as keyof Omit<
+                          LeaderboardEntry,
+                          "ID" | "Name"
+                        >
+                      ],
+                      true
+                    )}
+                    className="text-right"
+                  >
+                    {secondsToMinutes(
+                      entry[
+                        `Percentile${percentile}` as keyof Omit<
+                          LeaderboardEntry,
+                          "ID" | "Name"
+                        >
+                      ]
+                    )}
+                  </TableCell>
+                )
+              )}
             </TableRow>
           ))}
         </TableBody>
