@@ -107,5 +107,9 @@ func main() {
 		c.JSON(http.StatusOK, WeekTimesHandler(year, month, day))
 	})
 
+	r.GET("/leaderboard", func(c *gin.Context) {
+		c.JSON(http.StatusOK, LeaderboardHandler())
+	})
+
 	r.Run(":" + port)
 }
