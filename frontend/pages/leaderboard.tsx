@@ -1,8 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import useSWR from "swr";
 import { API_URL } from "api";
 import * as z from "zod";
 import { Header } from "@/components/header";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 const LeaderboardEntrySchema = z.object({
   ID: z.number(),
@@ -42,70 +52,106 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
     { fallbackData: initialData, refreshInterval: 10000 }
   );
 
+  const [sortColumn, setSortColumn] =
+    useState<keyof LeaderboardEntry>("Percentile50");
+
+  const [ascending, setAscending] = useState<boolean>(true);
+
   if (!leaderboardData) {
     return <div>Loading...</div>;
   }
+
+  const sortedData = [...leaderboardData].sort((a, b) => {
+    if (a[sortColumn] < b[sortColumn]) return ascending ? -1 : 1;
+    if (a[sortColumn] > b[sortColumn]) return ascending ? 1 : -1;
+    return 0;
+  });
+
+  const handleSort = (column: keyof LeaderboardEntry) => {
+    if (column === sortColumn) {
+      setAscending(!ascending);
+    } else {
+      setSortColumn(column);
+      setAscending(true);
+    }
+  };
 
   return (
     <div>
       <Header />
 
-      <h1>Leaderboard</h1>
+      <h1 className="text-lg font-semibold p-4 pt-0">Leaderboard</h1>
 
-      <table>
-        <thead>
-          <tr>
-            <th rowSpan={1}></th>
-            <th colSpan={9}>Percentiles</th>
-          </tr>
-          <tr>
-            <th>Name</th>
-            <th>10</th>
-            <th>20</th>
-            <th>30</th>
-            <th>40</th>
-            <th>50</th>
-            <th>60</th>
-            <th>70</th>
-            <th>80</th>
-            <th>90</th>
-          </tr>
-        </thead>
-        <tbody>
-          {leaderboardData?.map((entry) => (
-            <tr key={entry.ID}>
-              <td>{entry.Name}</td>
-              <td title={entry.Percentile10.toFixed(2)}>
-                {Math.round(entry.Percentile10)}
-              </td>
-              <td title={entry.Percentile20.toFixed(2)}>
-                {Math.round(entry.Percentile20)}
-              </td>
-              <td title={entry.Percentile30.toFixed(2)}>
-                {Math.round(entry.Percentile30)}
-              </td>
-              <td title={entry.Percentile40.toFixed(2)}>
-                {Math.round(entry.Percentile40)}
-              </td>
-              <td title={entry.Percentile50.toFixed(2)}>
-                {Math.round(entry.Percentile50)}
-              </td>
-              <td title={entry.Percentile60.toFixed(2)}>
-                {Math.round(entry.Percentile60)}
-              </td>
-              <td title={entry.Percentile70.toFixed(2)}>
-                {Math.round(entry.Percentile70)}
-              </td>
-              <td title={entry.Percentile80.toFixed(2)}>
-                {Math.round(entry.Percentile80)}
-              </td>
-              <td title={entry.Percentile90.toFixed(2)}>
-                {Math.round(entry.Percentile90)}
-              </td>
-            </tr>
+      <Table>
+        <TableHeader className="bg-blue-500 [&_tr]:border-none">
+          <TableRow className="hover:bg-nonsense">
+            <TableHead colSpan={1} className="h-[30px]"></TableHead>
+            <TableHead colSpan={9} className="text-center text-white h-[30px]">
+              Percentiles
+            </TableHead>
+          </TableRow>
+
+          <TableRow className="hover:bg-nonsense">
+            <TableHead className="text-white">Name</TableHead>
+            {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((percentile) => (
+              <TableHead
+                key={percentile}
+                className={cn(
+                  "relative p-4 cursor-pointer text-white text-right"
+                )}
+                onClick={() =>
+                  handleSort(
+                    `Percentile${percentile}` as keyof LeaderboardEntry
+                  )
+                }
+              >
+                <span className="line-clamp-2">{percentile}</span>
+                {sortColumn === `Percentile${percentile}` && (
+                  <div className="absolute bottom-1 right-1">
+                    {ascending ? " \u25B2" : " \u25BC"}
+                  </div>
+                )}
+              </TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+
+        <TableBody>
+          {sortedData.map((entry) => (
+            <TableRow key={entry.ID}>
+              <TableCell>
+                <Link
+                  href={`/user/${entry.ID}`}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {entry.Name}
+                </Link>
+              </TableCell>
+              {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((percentile) => (
+                <TableCell
+                  key={percentile}
+                  title={entry[
+                    `Percentile${percentile}` as keyof Omit<
+                      LeaderboardEntry,
+                      "ID" | "Name"
+                    >
+                  ].toFixed(2)}
+                  className="text-right"
+                >
+                  {Math.round(
+                    entry[
+                      `Percentile${percentile}` as keyof Omit<
+                        LeaderboardEntry,
+                        "ID" | "Name"
+                      >
+                    ]
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 };
