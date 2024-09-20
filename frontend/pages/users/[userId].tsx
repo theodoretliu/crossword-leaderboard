@@ -88,7 +88,7 @@ export default function User({
 
         <h2 className="text-lg font-semibold px-4">Cumulative Statistics</h2>
 
-        <div className="w-full overflow-scroll">
+        <div className="w-full overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>

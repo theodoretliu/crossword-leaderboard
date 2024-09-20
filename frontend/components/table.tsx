@@ -113,7 +113,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
   ];
 
   return (
-    <div className="w-full overflow-scroll">
+    <div className="w-full overflow-auto">
       <UITable>
         <TableHeader className="bg-blue-500 text-white">
           <TableRow className="hover:bg-blue-600">
