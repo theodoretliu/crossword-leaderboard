@@ -22,8 +22,8 @@ type dateElo struct {
 }
 
 type timeStruct struct {
-	TimeInSeconds int64
-	Date          time.Time
+	TimeInSeconds int64     `json:"t"`
+	Date          time.Time `json:"d"`
 }
 
 type UserResponse struct {

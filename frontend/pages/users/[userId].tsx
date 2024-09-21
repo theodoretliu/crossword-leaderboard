@@ -17,6 +17,40 @@ import {
 } from "@/components/ui/table";
 import { dateToFormat, secondsToMinutes } from "utils";
 
+import {
+  BarChart,
+  Bar,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Scatter,
+} from "recharts";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import { CardTitle } from "@/components/ui/card";
+
+const chartConfig = {
+  t: {
+    label: "Time in seconds",
+    color: "hsl(var(--chart-1))",
+  },
+  average100: {
+    label: "100-day moving average",
+    color: "hsl(var(--chart-2))",
+  },
+  average200: {
+    label: "200-day moving average",
+    color: "hsl(var(--chart-3))",
+  },
+} satisfies ChartConfig;
+
 const StatsType = z.object({
   Average: z.number(),
   Median: z.number(),
@@ -32,6 +66,12 @@ const ResponseType = z.object({
   OverallStats: StatsType,
   LongestStreak: z.number(),
   CurrentStreak: z.number(),
+  AllTimes: z.array(
+    z.object({
+      t: z.number(),
+      d: z.coerce.date(),
+    })
+  ),
 });
 
 dayjs.extend(utc);
@@ -47,7 +87,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const { userId } = context.query;
   const initialData = await fetcher(`/users/${userId}`);
 
-  return { props: { initialData } };
+  return { props: { initialData: JSON.parse(JSON.stringify(initialData)) } };
 };
 
 export default function User({
@@ -63,6 +103,31 @@ export default function User({
     fallbackData: initialData,
   });
 
+  const movingAverage = data.AllTimes.map((solve, index) => {
+    const window100 = data.AllTimes.slice(Math.max(0, index - 100), index + 1);
+    const window200 = data.AllTimes.slice(Math.max(0, index - 200), index + 1);
+    const average100 =
+      window100.reduce((acc, curr) => {
+        return (
+          acc + (dayjs(curr.d).utc().day() === 6 ? curr.t * (25 / 49) : curr.t)
+        );
+      }, 0) / window100.length;
+
+    const average200 =
+      window200.reduce((acc, curr) => {
+        return (
+          acc + (dayjs(curr.d).utc().day() === 6 ? curr.t * (25 / 49) : curr.t)
+        );
+      }, 0) / window200.length;
+
+    return {
+      d: solve.d,
+      average100,
+      average200,
+      t: solve.t,
+    };
+  });
+
   if (error) {
     return "Error";
   }
@@ -71,11 +136,13 @@ export default function User({
     return <div />;
   }
 
+  console.log(movingAverage);
+
   return (
     <div>
       <Header />
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 max-w-[1024px]">
         <h2 className="text-lg font-semibold px-4">
           Statistics for {data.Username}
         </h2>
@@ -141,6 +208,70 @@ export default function User({
               </TableRow>
             </TableBody>
           </Table>
+        </div>
+
+        <div className="p-4 pt-0">
+          <h2 className="text-lg font-semibold mb-4">Solve Time History</h2>
+
+          <ChartContainer config={chartConfig} className="min-h-[300px] w-full">
+            <LineChart data={movingAverage}>
+              <XAxis
+                dataKey="d"
+                scale="time"
+                interval="preserveStartEnd"
+                tickFormatter={(value) => dayjs(value).utc().format("M/D/YY")}
+              />
+
+              <YAxis
+                label={{
+                  value: "Time (seconds)",
+                  angle: -90,
+                  position: "insideLeft",
+                }}
+              />
+
+              <ChartTooltip
+                content={
+                  <ChartTooltipContent
+                    // labelKey="d"
+                    labelFormatter={(value) =>
+                      dayjs(value).utc().format("MMM D, YYYY")
+                    }
+                  />
+                }
+              />
+
+              <Line
+                dataKey="t"
+                stroke="var(--color-t)"
+                strokeOpacity={0.2}
+                strokeWidth={0}
+                dot={{ stroke: "var(--color-t)", strokeWidth: 2 }}
+                type="monotone"
+              />
+
+              <Line
+                dataKey="average100"
+                stroke="var(--color-average100)"
+                strokeWidth={2}
+                strokeOpacity={0.5}
+                dot={false}
+                type="monotone"
+              />
+
+              <Line
+                dataKey="average200"
+                stroke="var(--color-average200)"
+                strokeWidth={2}
+                dot={false}
+                type="monotone"
+              />
+
+              <Tooltip />
+
+              <CartesianGrid strokeDasharray="3 3" />
+            </LineChart>
+          </ChartContainer>
         </div>
       </div>
     </div>
