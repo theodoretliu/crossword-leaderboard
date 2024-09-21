@@ -26,11 +26,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   return { props: { initialData } };
 };
 
-export default function Week({
-  initialData,
-}: {
-  initialData: z.infer<typeof ResponseType>;
-}) {
+export default function Week({ initialData }: { initialData: z.infer<typeof ResponseType> }) {
   const router = useRouter();
 
   const { year, month, day } = router.query as {
@@ -39,9 +35,7 @@ export default function Week({
     day: string;
   };
 
-  const date = dayjs.utc(
-    Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day))
-  );
+  const date = dayjs.utc(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
 
   let dates = datesToFormat(initialData.DaysOfTheWeek);
 
@@ -49,7 +43,7 @@ export default function Week({
     <div>
       <Header />
 
-      <h2 className="text-lg font-semibold px-4 pb-4">
+      <h2 className="px-4 pb-4 text-lg font-semibold">
         Week of {date.format("dddd, MMMM D, YYYY")}
       </h2>
 

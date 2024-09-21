@@ -15,9 +15,7 @@ export function useFeatureFlag(featureFlag: string): {
   error?: any;
 } {
   const { data, error } = useSWR(featureFlag, async (flag: string) => {
-    let res = await fetch(
-      `${API_URL}/feature_flag?flag=${encodeURIComponent(flag)}`
-    );
+    let res = await fetch(`${API_URL}/feature_flag?flag=${encodeURIComponent(flag)}`);
     let json = await res.json();
 
     return FeatureFlagType.parse(json);

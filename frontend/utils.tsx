@@ -1,9 +1,6 @@
 import dayjs from "dayjs";
 
-export const secondsToMinutes = (
-  seconds: number,
-  showDecimals: boolean = false
-) => {
+export const secondsToMinutes = (seconds: number, showDecimals: boolean = false) => {
   let secondsStr: string;
   if (showDecimals) {
     secondsStr = seconds.toFixed(2);
@@ -12,9 +9,7 @@ export const secondsToMinutes = (
     const minutes = Math.floor(totalSeconds / 60);
     const secondsRemaining = totalSeconds % 60;
 
-    return `${minutes}:${secondsRemaining
-      .toString()
-      .padStart(2, "0")}${decimals}`;
+    return `${minutes}:${secondsRemaining.toString().padStart(2, "0")}${decimals}`;
   }
 
   secondsStr = seconds.toFixed(0);

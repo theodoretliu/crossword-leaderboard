@@ -36,7 +36,7 @@ interface RowProps {
 function Row({ UserId, Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
   return (
     <TableRow className="text-right">
-      <TableCell className="text-left p-4">
+      <TableCell className="p-4 text-left">
         <Link
           href={`/users/${UserId}/`}
           className="text-primary underline-offset-4 hover:underline"
@@ -88,9 +88,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
     } else if (orderBy === "Username") {
       prelimSort = _sortBy(newUsers, orderBy);
     } else {
-      prelimSort = _sortBy(newUsers, (user) =>
-        user[orderBy] === -1 ? 10000 : user[orderBy]
-      );
+      prelimSort = _sortBy(newUsers, (user) => (user[orderBy] === -1 ? 10000 : user[orderBy]));
     }
 
     if (ascending) {
@@ -120,8 +118,8 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
             {headers.map((header, i) => (
               <TableHead
                 className={cn(
-                  "relative p-4 cursor-pointer text-white whitespace-nowrap",
-                  i > 0 && "text-right"
+                  "relative cursor-pointer whitespace-nowrap p-4 text-white",
+                  i > 0 && "text-right",
                 )}
                 key={JSON.stringify(header)}
                 onClick={() => {
@@ -146,18 +144,14 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
         <TableBody>
           {newUsers.length === 0 && (
             <TableRow>
-              <TableCell colSpan={9}>
-                No recorded times yet for the week!
-              </TableCell>
+              <TableCell colSpan={9}>No recorded times yet for the week!</TableCell>
             </TableRow>
           )}
 
           {newUsers.length > 0 && (
             <>
               {orderBy !== "WeeksAverage" &&
-                sortedUsers.map((user, i) => (
-                  <Row {...user} key={JSON.stringify(user)} />
-                ))}
+                sortedUsers.map((user, i) => <Row {...user} key={JSON.stringify(user)} />)}
 
               {orderBy === "WeeksAverage" &&
                 (qualifiedUsers.length > 0 ? (
@@ -169,18 +163,14 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={9}>
-                      No users <QualificationTooltip text="qualified" /> for the
-                      weekly ranking :(
+                      No users <QualificationTooltip text="qualified" /> for the weekly ranking :(
                     </TableCell>
                   </TableRow>
                 ))}
 
               {orderBy === "WeeksAverage" && (
-                <TableRow className="bg-blue-500 hover:bg-unset">
-                  <TableCell
-                    colSpan={9}
-                    className="h-2 p-0 hover:unset"
-                  ></TableCell>
+                <TableRow className="hover:bg-unset bg-blue-500">
+                  <TableCell colSpan={9} className="hover:unset h-2 p-0"></TableCell>
                 </TableRow>
               )}
 
@@ -189,9 +179,8 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
                   <>
                     <TableRow>
                       <TableCell colSpan={9}>
-                        Users below blue line did not{" "}
-                        <QualificationTooltip text="qualify" /> for weekly
-                        ranking.
+                        Users below blue line did not <QualificationTooltip text="qualify" /> for
+                        weekly ranking.
                       </TableCell>
                     </TableRow>
                     {unqualifiedUsers.map((user, i) => (
@@ -201,8 +190,8 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={9}>
-                      All users have <QualificationTooltip text="qualified" />{" "}
-                      for the weekly ranking!
+                      All users have <QualificationTooltip text="qualified" /> for the weekly
+                      ranking!
                     </TableCell>
                   </TableRow>
                 ))}
@@ -225,8 +214,8 @@ const QualificationTooltip = ({ text }: { text?: string }) => {
 
       <TooltipContent>
         <p>
-          To qualify for the weekly ranking, users must complete at least 3 out
-          of 6 5x5 minis and the 7x7 Saturday mini
+          To qualify for the weekly ranking, users must complete at least 3 out of 6 5x5 minis and
+          the 7x7 Saturday mini
         </p>
       </TooltipContent>
     </Tooltip>

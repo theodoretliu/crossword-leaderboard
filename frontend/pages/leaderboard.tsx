@@ -46,17 +46,13 @@ export async function getServerSideProps() {
   return { props: { initialData } };
 }
 
-const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
-  initialData,
-}) => {
-  const { data: leaderboardData } = useSWR<LeaderboardEntry[]>(
-    API_URL + "/leaderboard",
-    fetcher,
-    { fallbackData: initialData, refreshInterval: 10000 }
-  );
+const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({ initialData }) => {
+  const { data: leaderboardData } = useSWR<LeaderboardEntry[]>(API_URL + "/leaderboard", fetcher, {
+    fallbackData: initialData,
+    refreshInterval: 10000,
+  });
 
-  const [sortColumn, setSortColumn] =
-    useState<keyof LeaderboardEntry>("Percentile50");
+  const [sortColumn, setSortColumn] = useState<keyof LeaderboardEntry>("Percentile50");
 
   const [ascending, setAscending] = useState<boolean>(true);
 
@@ -83,13 +79,13 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
     <div>
       <Header />
 
-      <h1 className="text-lg font-semibold p-4 pt-0">All-Time Leaderboard</h1>
+      <h1 className="p-4 pt-0 text-lg font-semibold">All-Time Leaderboard</h1>
 
       <Table>
         <TableHeader className="bg-blue-500 [&_tr]:border-none">
           <TableRow className="hover:bg-nonsense">
             <TableHead colSpan={1} className="h-[30px]"></TableHead>
-            <TableHead colSpan={11} className="text-center text-white h-[30px]">
+            <TableHead colSpan={11} className="h-[30px] text-center text-white">
               Percentiles
             </TableHead>
           </TableRow>
@@ -99,14 +95,8 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
             {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((percentile) => (
               <TableHead
                 key={percentile}
-                className={cn(
-                  "relative p-4 cursor-pointer text-white text-right"
-                )}
-                onClick={() =>
-                  handleSort(
-                    `Percentile${percentile}` as keyof LeaderboardEntry
-                  )
-                }
+                className={cn("relative cursor-pointer p-4 text-right text-white")}
+                onClick={() => handleSort(`Percentile${percentile}` as keyof LeaderboardEntry)}
               >
                 <span className="line-clamp-2">{percentile}</span>
                 {sortColumn === `Percentile${percentile}` && (
@@ -137,32 +127,20 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({
                   {entry.Name}
                 </Link>
               </TableCell>
-              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map(
-                (percentile) => (
-                  <TableCell
-                    key={percentile}
-                    title={secondsToMinutes(
-                      entry[
-                        `Percentile${percentile}` as keyof Omit<
-                          LeaderboardEntry,
-                          "ID" | "Name"
-                        >
-                      ],
-                      true
-                    )}
-                    className="text-right"
-                  >
-                    {secondsToMinutes(
-                      entry[
-                        `Percentile${percentile}` as keyof Omit<
-                          LeaderboardEntry,
-                          "ID" | "Name"
-                        >
-                      ]
-                    )}
-                  </TableCell>
-                )
-              )}
+              {[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((percentile) => (
+                <TableCell
+                  key={percentile}
+                  title={secondsToMinutes(
+                    entry[`Percentile${percentile}` as keyof Omit<LeaderboardEntry, "ID" | "Name">],
+                    true,
+                  )}
+                  className="text-right"
+                >
+                  {secondsToMinutes(
+                    entry[`Percentile${percentile}` as keyof Omit<LeaderboardEntry, "ID" | "Name">],
+                  )}
+                </TableCell>
+              ))}
             </TableRow>
           ))}
         </TableBody>

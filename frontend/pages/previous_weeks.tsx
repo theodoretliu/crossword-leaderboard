@@ -29,15 +29,13 @@ export default function PreviousWeeks() {
     <div>
       <Header />
 
-      <h2 className="px-4 text-lg font-semibold pb-4">Previous Weeks</h2>
+      <h2 className="px-4 pb-4 text-lg font-semibold">Previous Weeks</h2>
 
       <div className="flex flex-col gap-1 px-4 pb-4">
         {weekStarts.map((weekStart) => (
           <Link
             key={weekStart.toString()}
-            href={`/week/${weekStart.year()}/${
-              weekStart.month() + 1
-            }/${weekStart.date()}`}
+            href={`/week/${weekStart.year()}/${weekStart.month() + 1}/${weekStart.date()}`}
           >
             {weekStart.format("MMMM D, YYYY")}
           </Link>

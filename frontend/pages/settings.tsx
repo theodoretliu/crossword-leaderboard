@@ -91,16 +91,13 @@ function Settings({ initialData }: SettingsProps) {
 
       <Header />
 
-      <h2 className="text-lg font-semibold px-4 pb-4">Settings</h2>
+      <h2 className="px-4 pb-4 text-lg font-semibold">Settings</h2>
 
-      <div className="w-full grid grid-cols-2 px-4 gap-4 pb-4">
+      <div className="grid w-full grid-cols-2 gap-4 px-4 pb-4">
         <div className="flex flex-col gap-4">
           <h2>Shown (Click name to remove)</h2>
 
-          <Button
-            onClick={() => setRemovedUsers(users.map((user) => user.Id))}
-            className="w-fit"
-          >
+          <Button onClick={() => setRemovedUsers(users.map((user) => user.Id))} className="w-fit">
             Remove all
           </Button>
 
@@ -127,11 +124,7 @@ function Settings({ initialData }: SettingsProps) {
               <UserRow
                 key={user.Id}
                 name={user.Name}
-                onClick={() =>
-                  setRemovedUsers(
-                    removedUsers.filter((userId) => userId !== user.Id)
-                  )
-                }
+                onClick={() => setRemovedUsers(removedUsers.filter((userId) => userId !== user.Id))}
               />
             ))}
           </div>
