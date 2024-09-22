@@ -128,8 +128,6 @@ export default function User({ initialData }: { initialData: z.infer<typeof Resp
     return <div />;
   }
 
-  console.log(movingAverage);
-
   return (
     <div>
       <Header />
