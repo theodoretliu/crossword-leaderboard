@@ -204,6 +204,9 @@ export default function User({ initialData }: { initialData: z.infer<typeof Resp
                   angle: -90,
                   position: "insideLeft",
                 }}
+                interval="preserveStart"
+                domain={[0, Math.max(...movingAverage.map((solve) => solve.average100)) * 1.1]}
+                allowDataOverflow
               />
 
               <ChartTooltip
