@@ -22,3 +22,5 @@ docker
 *.bin
 
 tsconfig.tsbuildinfo
+
+tmp
