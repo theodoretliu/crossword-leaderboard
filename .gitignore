@@ -1,6 +1,8 @@
 .DS_Store
 .vscode
 .env
+.env.local
+.overmind.env
 server/server
 env.sh
 
