@@ -1,0 +1,18 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/scraper ./cmd/scraper"
+bin = "./tmp/scraper"
+include_ext = ["go"]
+exclude_dir = ["tmp", "vendor"]
+delay = 1000
+
+[log]
+time = false
+
+[color]
+main = "blue"
+watcher = "cyan"
+build = "yellow"
+runner = "green"
