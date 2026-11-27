@@ -11,7 +11,9 @@ import (
 	"github.com/theodoretliu/crossword-leaderboard/internal/store"
 )
 
-// Scraper fetches a date's leaderboard and stores it.
+// Scraper fetches a date's leaderboard and writes it straight to the database.
+// It suits one-off runs such as scrapeall; the long-running scraper uses a
+// Batcher instead so the database can sleep between writes.
 type Scraper struct {
 	Pool    *pgxpool.Pool
 	Fetcher Fetcher
@@ -19,31 +21,53 @@ type Scraper struct {
 
 // ScrapeDate fetches the leaderboard for date and upserts its users and times.
 func (s *Scraper) ScrapeDate(ctx context.Context, date time.Time) error {
-	// Fetch before opening a transaction so a slow NYT request does not hold a
-	// pooled connection.
 	results, err := s.Fetcher.Fetch(ctx, date)
 	if err != nil {
 		return fmt.Errorf("fetching %s: %w", date.Format(time.DateOnly), err)
 	}
 
-	results = uniqueByUser(results)
-	if len(results) == 0 {
+	users := uniqueByUser(results)
+	var solves []solve
+	for _, r := range users {
+		if r.SolveTimeSeconds != nil {
+			solves = append(solves, solve{NYTUserID: r.NYTUserID, Date: StartOfDay(date), Seconds: *r.SolveTimeSeconds})
+		}
+	}
+	if err := save(ctx, s.Pool, users, solves); err != nil {
+		return fmt.Errorf("saving %s: %w", date.Format(time.DateOnly), err)
+	}
+	return nil
+}
+
+// solve is one user's time for one puzzle date.
+type solve struct {
+	NYTUserID int64
+	Date      time.Time
+	Seconds   int32
+}
+
+// save upserts users and inserts solves in a single transaction. users must be
+// unique and sorted by NYT user ID (see uniqueByUser) and must include every
+// user that appears in solves.
+func save(ctx context.Context, pool *pgxpool.Pool, users []Result, solves []solve) error {
+	if len(users) == 0 {
 		return nil
 	}
 
-	tx, err := s.Pool.Begin(ctx)
+	// Network I/O happens before this point, so the transaction stays short.
+	tx, err := pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback(ctx)
-
 	q := store.New(tx)
-	userIDs, err := upsertUsers(ctx, q, results)
+
+	userIDs, err := upsertUsers(ctx, q, users)
 	if err != nil {
-		return fmt.Errorf("upserting users for %s: %w", date.Format(time.DateOnly), err)
+		return fmt.Errorf("upserting users: %w", err)
 	}
-	if err := insertTimes(ctx, q, results, userIDs, date); err != nil {
-		return fmt.Errorf("inserting times for %s: %w", date.Format(time.DateOnly), err)
+	if err := insertTimes(ctx, q, solves, userIDs); err != nil {
+		return fmt.Errorf("inserting times: %w", err)
 	}
 	return tx.Commit(ctx)
 }
@@ -63,15 +87,15 @@ func uniqueByUser(results []Result) []Result {
 }
 
 // upsertUsers inserts or renames each user and returns their database IDs keyed
-// by NYT user ID. results must be unique and sorted by NYT user ID.
-func upsertUsers(ctx context.Context, q *store.Queries, results []Result) (map[int64]int64, error) {
+// by NYT user ID.
+func upsertUsers(ctx context.Context, q *store.Queries, users []Result) (map[int64]int64, error) {
 	params := store.UpsertUsersParams{
-		NytUserIds: make([]int64, len(results)),
-		Names:      make([]string, len(results)),
+		NytUserIds: make([]int64, len(users)),
+		Names:      make([]string, len(users)),
 	}
-	for i, r := range results {
-		params.NytUserIds[i] = r.NYTUserID
-		params.Names[i] = r.Name
+	for i, u := range users {
+		params.NytUserIds[i] = u.NYTUserID
+		params.Names[i] = u.Name
 	}
 
 	rows, err := q.UpsertUsers(ctx, params)
@@ -87,22 +111,24 @@ func upsertUsers(ctx context.Context, q *store.Queries, results []Result) (map[i
 	return ids, nil
 }
 
-// insertTimes records a solve time for every user who has one.
-func insertTimes(ctx context.Context, q *store.Queries, results []Result, userIDs map[int64]int64, date time.Time) error {
-	params := store.InsertTimesParams{Date: StartOfDay(date)}
-	for _, r := range results {
-		if r.SolveTimeSeconds == nil {
-			continue
-		}
-		id, ok := userIDs[r.NYTUserID]
-		if !ok {
-			return fmt.Errorf("no database ID for NYT user %d", r.NYTUserID)
-		}
-		params.UserIds = append(params.UserIds, id)
-		params.TimesInSeconds = append(params.TimesInSeconds, *r.SolveTimeSeconds)
-	}
-	if len(params.UserIds) == 0 {
+// insertTimes records solves, keeping any time already stored.
+func insertTimes(ctx context.Context, q *store.Queries, solves []solve, userIDs map[int64]int64) error {
+	if len(solves) == 0 {
 		return nil
+	}
+	params := store.InsertTimesParams{
+		UserIds:        make([]int64, len(solves)),
+		TimesInSeconds: make([]int32, len(solves)),
+		Dates:          make([]time.Time, len(solves)),
+	}
+	for i, s := range solves {
+		id, ok := userIDs[s.NYTUserID]
+		if !ok {
+			return fmt.Errorf("no database ID for NYT user %d", s.NYTUserID)
+		}
+		params.UserIds[i] = id
+		params.TimesInSeconds[i] = s.Seconds
+		params.Dates[i] = s.Date
 	}
 	return q.InsertTimes(ctx, params)
 }

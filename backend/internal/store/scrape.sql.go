@@ -23,20 +23,86 @@ func (q *Queries) GetCookie(ctx context.Context) (string, error) {
 
 const insertTimes = `-- name: InsertTimes :exec
 INSERT INTO times (user_id, time_in_seconds, date)
-SELECT unnest($1::bigint[]), unnest($2::integer[]), $3::date
+SELECT unnest($1::bigint[]), unnest($2::integer[]), unnest($3::date[])
 ON CONFLICT (user_id, date) DO NOTHING
 `
 
 type InsertTimesParams struct {
 	UserIds        []int64
 	TimesInSeconds []int32
-	Date           time.Time
+	Dates          []time.Time
 }
 
-// InsertTimes records solve times for one date, keeping any time already stored.
+// InsertTimes records solve times (parallel arrays, any mix of dates), keeping
+// any time already stored for a user and date.
 func (q *Queries) InsertTimes(ctx context.Context, arg InsertTimesParams) error {
-	_, err := q.db.Exec(ctx, insertTimes, arg.UserIds, arg.TimesInSeconds, arg.Date)
+	_, err := q.db.Exec(ctx, insertTimes, arg.UserIds, arg.TimesInSeconds, arg.Dates)
 	return err
+}
+
+const listKnownUsers = `-- name: ListKnownUsers :many
+SELECT nyt_user_id::bigint AS nyt_user_id, coalesce(name, '')::text AS name
+FROM users
+WHERE nyt_user_id IS NOT NULL
+`
+
+type ListKnownUsersRow struct {
+	NytUserID int64
+	Name      string
+}
+
+// ListKnownUsers seeds the scraper's in-memory view of what is stored.
+func (q *Queries) ListKnownUsers(ctx context.Context) ([]ListKnownUsersRow, error) {
+	rows, err := q.db.Query(ctx, listKnownUsers)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListKnownUsersRow
+	for rows.Next() {
+		var i ListKnownUsersRow
+		if err := rows.Scan(&i.NytUserID, &i.Name); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listStoredSolves = `-- name: ListStoredSolves :many
+SELECT u.nyt_user_id::bigint AS nyt_user_id, t.date
+FROM times AS t
+JOIN users AS u ON u.id = t.user_id
+WHERE u.nyt_user_id IS NOT NULL
+`
+
+type ListStoredSolvesRow struct {
+	NytUserID int64
+	Date      time.Time
+}
+
+// ListStoredSolves seeds the scraper's in-memory view of what is stored.
+func (q *Queries) ListStoredSolves(ctx context.Context) ([]ListStoredSolvesRow, error) {
+	rows, err := q.db.Query(ctx, listStoredSolves)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListStoredSolvesRow
+	for rows.Next() {
+		var i ListStoredSolvesRow
+		if err := rows.Scan(&i.NytUserID, &i.Date); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const upsertUsers = `-- name: UpsertUsers :many
