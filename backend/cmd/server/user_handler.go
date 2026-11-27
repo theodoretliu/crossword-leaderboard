@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"sort"
+	"slices"
 	"time"
 )
 
@@ -155,7 +155,7 @@ func UserHandler(userId int64) UserResponse {
 
 	// computing weekday median
 	weekdayMedian := float64(0)
-	sort.Slice(allWeekdayTimes, func(i, j int) bool { return allWeekdayTimes[i] < allWeekdayTimes[j] })
+	slices.Sort(allWeekdayTimes)
 	if len(allWeekdayTimes) > 0 {
 		if len(allWeekdayTimes)%2 == 0 {
 			weekdayMedian = float64(allWeekdayTimes[len(allWeekdayTimes)/2-1]+allWeekdayTimes[len(allWeekdayTimes)/2]) / 2
@@ -177,7 +177,7 @@ func UserHandler(userId int64) UserResponse {
 
 	// computing saturday median
 	saturdayMedian := float64(0)
-	sort.Slice(allSaturdayTimes, func(i, j int) bool { return allSaturdayTimes[i] < allSaturdayTimes[j] })
+	slices.Sort(allSaturdayTimes)
 	if len(allSaturdayTimes) > 0 {
 		if len(allSaturdayTimes)%2 == 0 {
 			saturdayMedian = float64(allSaturdayTimes[len(allSaturdayTimes)/2-1]+allSaturdayTimes[len(allSaturdayTimes)/2]) / 2
@@ -207,7 +207,7 @@ func UserHandler(userId int64) UserResponse {
 	}
 
 	overallMedian := float64(0)
-	sort.Slice(allFloatTimes, func(i, j int) bool { return allFloatTimes[i] < allFloatTimes[j] })
+	slices.Sort(allFloatTimes)
 
 	if len(allFloatTimes) > 0 {
 		if len(allFloatTimes)%2 == 0 {

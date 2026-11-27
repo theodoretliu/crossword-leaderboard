@@ -66,11 +66,9 @@ func main() {
 
 	var wg sync.WaitGroup
 	watch := func(date time.Time) {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			s.watchDate(ctx, date)
-		}()
+		})
 	}
 
 	today := scrape.StartOfDay(time.Now())
@@ -78,11 +76,9 @@ func main() {
 		watch(date)
 	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		s.flushLoop(ctx)
-	}()
+	})
 
 	// Start watching each new puzzle date as its UTC day begins.
 	for {

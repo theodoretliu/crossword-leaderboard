@@ -36,8 +36,6 @@ func staticCookie(c string) func(context.Context) (string, error) {
 	return func(context.Context) (string, error) { return c, nil }
 }
 
-func int32p(v int32) *int32 { return &v }
-
 func TestGraphQLFetcher(t *testing.T) {
 	const cookie = "NYT-S=abc; nyt-a=xyz"
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -72,8 +70,8 @@ func TestGraphQLFetcher(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := []Result{
-		{NYTUserID: 100, Name: "Me", SolveTimeSeconds: int32p(42)},
-		{NYTUserID: 200, Name: "Fast", SolveTimeSeconds: int32p(17)},
+		{NYTUserID: 100, Name: "Me", SolveTimeSeconds: new(int32(42))},
+		{NYTUserID: 200, Name: "Fast", SolveTimeSeconds: new(int32(17))},
 		{NYTUserID: 300, Name: "Absent"},
 		{NYTUserID: 400, Name: "NoTime"},
 		{NYTUserID: 500, Name: "Zero"},

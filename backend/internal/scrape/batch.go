@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"fmt"
+	"maps"
 	"slices"
 	"sync"
 	"time"
@@ -123,9 +124,7 @@ func (b *Batcher) Flush(ctx context.Context) error {
 
 	// Every user with a solve must be in the upsert to get a database ID.
 	users := make(map[int64]string, len(pendingUsers))
-	for id, name := range pendingUsers {
-		users[id] = name
-	}
+	maps.Copy(users, pendingUsers)
 	for k := range pendingSolves {
 		if _, ok := users[k.NYTUserID]; !ok {
 			users[k.NYTUserID] = b.names[k.NYTUserID]

@@ -44,7 +44,7 @@ func TestBatcherSkipsWhatIsStored(t *testing.T) {
 	b.stored[keyFor(1, day1)] = struct{}{}
 
 	// Already stored: same name, existing solve, no solve. Nothing to write.
-	b.Observe(day1, []Result{{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: int32p(30)}})
+	b.Observe(day1, []Result{{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: new(int32(30))}})
 	b.Observe(day2, []Result{{NYTUserID: 1, Name: "Alice"}})
 	// An empty name from the API is not a rename.
 	b.Observe(day2, []Result{{NYTUserID: 1, Name: ""}})
@@ -67,16 +67,16 @@ func TestBatcherWritesOnlyChanges(t *testing.T) {
 	b.stored[keyFor(1, day1)] = struct{}{}
 
 	b.Observe(day1, []Result{
-		{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: int32p(30)}, // stored
-		{NYTUserID: 2, Name: "Bob", SolveTimeSeconds: int32p(50)},   // new solve
-		{NYTUserID: 3, Name: "Carol"},                               // new user
+		{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: new(int32(30))}, // stored
+		{NYTUserID: 2, Name: "Bob", SolveTimeSeconds: new(int32(50))},   // new solve
+		{NYTUserID: 3, Name: "Carol"},                                   // new user
 	})
 	b.Observe(day2, []Result{
-		{NYTUserID: 1, Name: "Alicia", SolveTimeSeconds: int32p(40)}, // rename + new solve
-		{NYTUserID: 2, Name: "Bob", SolveTimeSeconds: int32p(99)},
+		{NYTUserID: 1, Name: "Alicia", SolveTimeSeconds: new(int32(40))}, // rename + new solve
+		{NYTUserID: 2, Name: "Bob", SolveTimeSeconds: new(int32(99))},
 	})
 	// Seen again before the flush: still one pending solve each, first time kept.
-	b.Observe(day1, []Result{{NYTUserID: 2, Name: "Bob", SolveTimeSeconds: int32p(51)}})
+	b.Observe(day1, []Result{{NYTUserID: 2, Name: "Bob", SolveTimeSeconds: new(int32(51))}})
 
 	if err := b.Flush(context.Background()); err != nil {
 		t.Fatal(err)
@@ -99,7 +99,7 @@ func TestBatcherWritesOnlyChanges(t *testing.T) {
 	}
 
 	// After a successful flush the same observations are no-ops.
-	b.Observe(day2, []Result{{NYTUserID: 1, Name: "Alicia", SolveTimeSeconds: int32p(40)}})
+	b.Observe(day2, []Result{{NYTUserID: 1, Name: "Alicia", SolveTimeSeconds: new(int32(40))}})
 	if u, s := b.Pending(); u != 0 || s != 0 {
 		t.Errorf("Pending after flush = %d users, %d solves; want none", u, s)
 	}
@@ -108,7 +108,7 @@ func TestBatcherWritesOnlyChanges(t *testing.T) {
 func TestBatcherKeepsChangesWhenFlushFails(t *testing.T) {
 	fail := true
 	b, calls := recordingBatcher(t, &fail)
-	b.Observe(day1, []Result{{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: int32p(30)}})
+	b.Observe(day1, []Result{{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: new(int32(30))}})
 
 	if err := b.Flush(context.Background()); err == nil {
 		t.Fatal("Flush succeeded, want error")
@@ -127,7 +127,7 @@ func TestBatcherKeepsChangesWhenFlushFails(t *testing.T) {
 }
 
 func TestBatcherObserveDuringFlush(t *testing.T) {
-	results := []Result{{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: int32p(30)}}
+	results := []Result{{NYTUserID: 1, Name: "Alice", SolveTimeSeconds: new(int32(30))}}
 	var b *Batcher
 	saves := 0
 	b = newBatcher(func(context.Context, []Result, []solve) error {
@@ -161,7 +161,7 @@ func TestCookieCache(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	for i := 0; i < 3; i++ {
+	for range 3 {
 		if got, err := c.Get(ctx); err != nil || got != "NYT-S=one" {
 			t.Fatalf("Get = %q, %v", got, err)
 		}

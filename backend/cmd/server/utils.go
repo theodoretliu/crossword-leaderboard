@@ -22,7 +22,7 @@ func getFirstDayOfWeek(givenDay time.Time) time.Time {
 func getDaysOfTheWeek(start time.Time) []time.Time {
 	days := []time.Time{}
 
-	for i := 0; i < 7; i++ {
+	for range 7 {
 		days = append(days, start)
 		start = start.AddDate(0, 0, 1)
 	}
@@ -61,20 +61,6 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
-}
-
-func max(x, y int64) int64 {
-	if x > y {
-		return x
-	}
-	return y
-}
-
-func min(x, y int64) int64 {
-	if x < y {
-		return x
-	}
-	return y
 }
 
 func WeeklyAverage(times []int32, weeksWorstTimes []int32) int32 {
