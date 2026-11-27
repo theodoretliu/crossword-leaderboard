@@ -1,174 +1,134 @@
 package scrape
 
 import (
+	"cmp"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"golang.org/x/exp/slices"
 )
 
-const MinYear = 2020
-const MinMonth = 8
-const MinDay = 21
-
-type result struct {
-	UserID int64
-	Name   string
-	Score  *struct {
-		SecondsSpentSolving int32
-	}
+// Scraper fetches a date's leaderboard and stores it.
+type Scraper struct {
+	Pool    *pgxpool.Pool
+	Fetcher Fetcher
 }
 
-type nytResponse struct {
-	Data []result
-}
-
-func getResultsForDate(date time.Time, cookie string) ([]result, error) {
-	formattedDate := date.UTC().Format("2006-01-02")
-	requestString := fmt.Sprintf("https://www.nytimes.com/svc/crosswords/v6/leaderboard/mini/%s.json", formattedDate)
-
-	header := http.Header{}
-	header.Add("Cookie", cookie)
-	reader := strings.NewReader("")
-	request, err := http.NewRequest("GET", requestString, reader)
+// ScrapeDate fetches the leaderboard for date and upserts its users and times.
+func (s *Scraper) ScrapeDate(ctx context.Context, date time.Time) error {
+	// Fetch before opening a transaction so a slow NYT request does not hold a
+	// pooled connection.
+	results, err := s.Fetcher.Fetch(ctx, date)
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("fetching %s: %w", date.Format(time.DateOnly), err)
 	}
 
-	request.Header = header
-
-	client := http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var rawData nytResponse
-	err = json.Unmarshal(body, &rawData)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return rawData.Data, nil
-}
-
-func updateUsers(tx pgx.Tx, apiResults []result) ([]int64, error) {
-	values := []interface{}{}
-	valueParens := []string{}
-	count := int32(1)
-	onlyUserIds := []any{}
-	userIdParens := []string{}
-
-	for _, user := range apiResults {
-		valueParens = append(valueParens, fmt.Sprintf("($%d, $%d)", count, count+1))
-		count += 2
-		values = append(values, user.UserID, user.Name)
-		userIdParens = append(userIdParens, fmt.Sprintf("$%d", len(onlyUserIds)+1))
-		onlyUserIds = append(onlyUserIds, user.UserID)
-	}
-
-	queryString := fmt.Sprintf("INSERT INTO users (nyt_user_id, name) VALUES %s ON CONFLICT (nyt_user_id) DO UPDATE SET name = EXCLUDED.name", strings.Join(valueParens, ","))
-	_, err := tx.Exec(context.Background(), queryString, values...)
-	if err != nil {
-		return nil, err
-	}
-
-	retrieveUsersQuery := fmt.Sprintf("SELECT id FROM users WHERE nyt_user_id IN (%s) ORDER BY nyt_user_id ASC", strings.Join(userIdParens, ", "))
-	retrievedUserIds, err := tx.Query(
-		context.Background(),
-		retrieveUsersQuery,
-		onlyUserIds...,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	userIds, err := pgx.CollectRows(retrievedUserIds, pgx.RowTo[int64])
-	if err != nil {
-		return nil, err
-	}
-
-	return userIds, nil
-}
-
-func insertResults(tx pgx.Tx, apiResults []result, userIds []int64, date time.Time) error {
-	fmt.Println("inserting results for ", date)
-	valueParens := []string{}
-	values := []interface{}{}
-	count := int32(1)
-
-	for i, user := range apiResults {
-		if user.Score != nil {
-			userId := userIds[i]
-			valueParens = append(valueParens, fmt.Sprintf("($%d, $%d, $%d)", count, count+1, count+2))
-			values = append(values, userId, user.Score.SecondsSpentSolving, date.UTC().Format("2006-01-02"))
-			count += 3
-		}
-	}
-
-	// if there are no results yet
-	if len(values) == 0 {
-		fmt.Println("no results for date", date)
+	results = uniqueByUser(results)
+	if len(results) == 0 {
 		return nil
 	}
 
-	queryString := fmt.Sprintf("INSERT INTO times (user_id, time_in_seconds, date) VALUES %s ON CONFLICT DO NOTHING", strings.Join(valueParens, ","))
-	_, err := tx.Exec(context.Background(), queryString, values...)
+	tx, err := s.Pool.Begin(ctx)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback(ctx)
 
-	return nil
+	userIDs, err := upsertUsers(ctx, tx, results)
+	if err != nil {
+		return fmt.Errorf("upserting users for %s: %w", date.Format(time.DateOnly), err)
+	}
+	if err := insertTimes(ctx, tx, results, userIDs, date); err != nil {
+		return fmt.Errorf("inserting times for %s: %w", date.Format(time.DateOnly), err)
+	}
+	return tx.Commit(ctx)
 }
 
-func DbActionsForDate(pool *pgxpool.Pool, date time.Time) error {
-	tx, err := pool.Begin(context.Background())
-	if err != nil {
-		return err
-	}
-
-	defer tx.Rollback(context.Background())
-
-	var cookie string
-	err = tx.QueryRow(context.Background(), "SELECT value FROM cookies LIMIT 1").Scan(&cookie)
-	if err != nil {
-		return err
-	}
-
-	apiResults, err := getResultsForDate(date, cookie)
-	if err != nil {
-		return err
-	}
-
-	// sort users for stability and to avoid deadlocking
-	slices.SortFunc(apiResults, func(a, b result) int {
-		return int(a.UserID - b.UserID)
+// uniqueByUser sorts results by NYT user ID and drops duplicates. A consistent
+// order keeps concurrent upserts from deadlocking, and a user appearing twice
+// would make the upsert fail ("ON CONFLICT DO UPDATE command cannot affect row a
+// second time").
+func uniqueByUser(results []Result) []Result {
+	results = slices.Clone(results)
+	slices.SortStableFunc(results, func(a, b Result) int {
+		return cmp.Compare(a.NYTUserID, b.NYTUserID)
 	})
+	return slices.CompactFunc(results, func(a, b Result) bool {
+		return a.NYTUserID == b.NYTUserID
+	})
+}
 
-	userIds, err := updateUsers(tx, apiResults)
-	if err != nil {
-		return err
+// upsertUsers inserts or renames each user and returns their database IDs keyed
+// by NYT user ID.
+func upsertUsers(ctx context.Context, tx pgx.Tx, results []Result) (map[int64]int64, error) {
+	args := make([]any, 0, 2*len(results))
+	for _, r := range results {
+		args = append(args, r.NYTUserID, r.Name)
 	}
 
-	err = insertResults(tx, apiResults, userIds, date)
+	// An empty name from the API never overwrites a name we already have.
+	query := "INSERT INTO users (nyt_user_id, name) VALUES " + placeholders(len(results), 2) +
+		" ON CONFLICT (nyt_user_id) DO UPDATE SET name = COALESCE(NULLIF(EXCLUDED.name, ''), users.name)" +
+		" RETURNING nyt_user_id, id"
+	rows, err := tx.Query(ctx, query, args...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return tx.Commit(context.Background())
+	ids := make(map[int64]int64, len(results))
+	var nytID, id int64
+	_, err = pgx.ForEachRow(rows, []any{&nytID, &id}, func() error {
+		ids[nytID] = id
+		return nil
+	})
+	return ids, err
+}
+
+// insertTimes records a solve time for every user who has one.
+func insertTimes(ctx context.Context, tx pgx.Tx, results []Result, userIDs map[int64]int64, date time.Time) error {
+	day := date.UTC().Format(time.DateOnly)
+	var args []any
+	for _, r := range results {
+		if r.SolveTimeSeconds == nil {
+			continue
+		}
+		id, ok := userIDs[r.NYTUserID]
+		if !ok {
+			return fmt.Errorf("no database ID for NYT user %d", r.NYTUserID)
+		}
+		args = append(args, id, *r.SolveTimeSeconds, day)
+	}
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := "INSERT INTO times (user_id, time_in_seconds, date) VALUES " +
+		placeholders(len(args)/3, 3) + " ON CONFLICT DO NOTHING"
+	_, err := tx.Exec(ctx, query, args...)
+	return err
+}
+
+// placeholders returns "($1, $2), ($3, $4), ..." for rows tuples of cols values.
+func placeholders(rows, cols int) string {
+	var b strings.Builder
+	n := 1
+	for row := 0; row < rows; row++ {
+		if row > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteByte('(')
+		for col := 0; col < cols; col++ {
+			if col > 0 {
+				b.WriteString(", ")
+			}
+			fmt.Fprintf(&b, "$%d", n)
+			n++
+		}
+		b.WriteByte(')')
+	}
+	return b.String()
 }
