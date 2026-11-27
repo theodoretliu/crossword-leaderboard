@@ -1,23 +1,21 @@
-.PHONY: all server migration docker docker-server docker-frontend load-images
+.PHONY: dev deploy logs restart-scraper migration
 
-all: docker-backend docker-frontend
+REMOTE ?= theodoretliu@136.118.50.156
+COMPOSE = cd /opt/crossword && sudo docker compose --profile production
 
-deploy: docker-backend
-	ssh api.crossword.theodoretliu.com 'cd crossword-leaderboard && sudo make load-images && sudo docker compose --profile production up -d'
+# Postgres + Go API + Vite with the /api proxy, at http://localhost:20000
+dev:
+	bin/dev
+
+# Build locally, ship to the server, restart, wait for health checks
+deploy:
+	./deploy.sh
+
+logs:
+	ssh $(REMOTE) '$(COMPOSE) logs -f --tail 100'
 
 restart-scraper:
-	ssh api.crossword.theodoretliu.com 'cd crossword-leaderboard && sudo docker compose restart scraper'
-
-docker-backend:
-	docker buildx build --platform linux/amd64/v2 -t crossword-server backend
-	docker save -o crossword-server.tar crossword-server
-	scp crossword-server.tar theodoreliu@api.crossword.theodoretliu.com:
-
-load-images:
-	docker load -i ../crossword-server.tar
-
-server:
-	cd server && go build && ./server
+	ssh $(REMOTE) '$(COMPOSE) restart scraper'
 
 migration:
 	migrate create -ext sql -dir migrations -seq migration

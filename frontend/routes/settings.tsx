@@ -1,12 +1,12 @@
 import { jsx, css } from "@emotion/react";
 import React, { useState, useEffect } from "react";
 import { Header } from "@/components/header";
-import Head from "next/head";
 import useSWR from "swr";
 import * as z from "zod";
-import { API_URL } from "api";
+import { API_URL } from "@/api";
 import { Button } from "@/components/ui/button";
 import { useRemovedUsers } from "@/hooks/use_removed_users";
+import { DEFAULT_TITLE } from "@/router";
 
 const UsersList = z.object({
   Users: z.array(z.object({ Id: z.number(), Name: z.string() })),
@@ -17,12 +17,6 @@ async function fetcher(key: string) {
   const json = await response.json();
 
   return UsersList.parse(json);
-}
-
-export async function getServerSideProps() {
-  const initialData = await fetcher("/all_users");
-
-  return { props: { initialData } };
 }
 
 interface UserRowProps {
@@ -40,22 +34,20 @@ function UserRow(props: UserRowProps) {
   );
 }
 
-interface SettingsProps {
-  initialData: z.infer<typeof UsersList>;
-}
-
-function Settings({ initialData }: SettingsProps) {
+export function Settings() {
   const [removedUsers, setRemovedUsers] = useRemovedUsers();
 
   const [onClient, setIsOnClient] = useState(false);
 
   useEffect(() => {
     setIsOnClient(true);
+    document.title = "Mini Crossword Leaderboard: Settings";
+    return () => {
+      document.title = DEFAULT_TITLE;
+    };
   }, []);
 
-  const { error, data } = useSWR("/all_users", fetcher, {
-    fallbackData: initialData,
-  });
+  const { error, data } = useSWR("/all_users", fetcher);
 
   if (!onClient) {
     return null;
@@ -85,10 +77,6 @@ function Settings({ initialData }: SettingsProps) {
 
   return (
     <React.Fragment>
-      <Head>
-        <title>Mini Crossword Leaderboard: Settings</title>
-      </Head>
-
       <Header />
 
       <h2 className="px-4 pb-4 text-lg font-semibold">Settings</h2>
@@ -133,5 +121,3 @@ function Settings({ initialData }: SettingsProps) {
     </React.Fragment>
   );
 }
-
-export default Settings;
