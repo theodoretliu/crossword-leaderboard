@@ -5,7 +5,7 @@ import (
 	"math"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/theodoretliu/crossword-leaderboard/internal/store"
 )
 
 func getFirstDayOfWeek(givenDay time.Time) time.Time {
@@ -33,24 +33,10 @@ func getDaysOfTheWeek(start time.Time) []time.Time {
 func GetWeeksWorstTimes(daysOfTheWeek []time.Time) []int32 {
 	var worstTimes []int32
 
-	query := `
-		SELECT max(time_in_seconds), date FROM times
-		WHERE date >= $1 AND date <= $2
-		GROUP BY date(date)
-		ORDER BY date(date) ASC
-	`
-
-	rows, err := pool.Query(context.Background(), query, daysOfTheWeek[0], daysOfTheWeek[6])
-
-	if err != nil {
-		panic(err)
-	}
-
-	scannedRows, err := pgx.CollectRows(rows, pgx.RowToStructByPos[struct {
-		WorstTime int32
-		Date      time.Time
-	}])
-
+	scannedRows, err := queries.ListWorstTimesBetween(context.Background(), store.ListWorstTimesBetweenParams{
+		StartDate: daysOfTheWeek[0],
+		EndDate:   daysOfTheWeek[6],
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -67,6 +53,14 @@ func GetWeeksWorstTimes(daysOfTheWeek []time.Time) []int32 {
 	}
 
 	return worstTimes
+}
+
+// deref returns *s, or "" when s is nil (a NULL column).
+func deref(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
 
 func max(x, y int64) int64 {

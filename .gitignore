@@ -19,7 +19,7 @@ dev.sqlite3*
 docker
 
 *.sql
-!leaderboard_query.sql
+!backend/db/**/*.sql
 *.bin
 
 tsconfig.tsbuildinfo

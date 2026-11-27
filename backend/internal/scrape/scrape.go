@@ -5,11 +5,10 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/theodoretliu/crossword-leaderboard/internal/store"
 )
 
 // Scraper fetches a date's leaderboard and stores it.
@@ -38,11 +37,12 @@ func (s *Scraper) ScrapeDate(ctx context.Context, date time.Time) error {
 	}
 	defer tx.Rollback(ctx)
 
-	userIDs, err := upsertUsers(ctx, tx, results)
+	q := store.New(tx)
+	userIDs, err := upsertUsers(ctx, q, results)
 	if err != nil {
 		return fmt.Errorf("upserting users for %s: %w", date.Format(time.DateOnly), err)
 	}
-	if err := insertTimes(ctx, tx, results, userIDs, date); err != nil {
+	if err := insertTimes(ctx, q, results, userIDs, date); err != nil {
 		return fmt.Errorf("inserting times for %s: %w", date.Format(time.DateOnly), err)
 	}
 	return tx.Commit(ctx)
@@ -63,35 +63,33 @@ func uniqueByUser(results []Result) []Result {
 }
 
 // upsertUsers inserts or renames each user and returns their database IDs keyed
-// by NYT user ID.
-func upsertUsers(ctx context.Context, tx pgx.Tx, results []Result) (map[int64]int64, error) {
-	args := make([]any, 0, 2*len(results))
-	for _, r := range results {
-		args = append(args, r.NYTUserID, r.Name)
+// by NYT user ID. results must be unique and sorted by NYT user ID.
+func upsertUsers(ctx context.Context, q *store.Queries, results []Result) (map[int64]int64, error) {
+	params := store.UpsertUsersParams{
+		NytUserIds: make([]int64, len(results)),
+		Names:      make([]string, len(results)),
+	}
+	for i, r := range results {
+		params.NytUserIds[i] = r.NYTUserID
+		params.Names[i] = r.Name
 	}
 
-	// An empty name from the API never overwrites a name we already have.
-	query := "INSERT INTO users (nyt_user_id, name) VALUES " + placeholders(len(results), 2) +
-		" ON CONFLICT (nyt_user_id) DO UPDATE SET name = COALESCE(NULLIF(EXCLUDED.name, ''), users.name)" +
-		" RETURNING nyt_user_id, id"
-	rows, err := tx.Query(ctx, query, args...)
+	rows, err := q.UpsertUsers(ctx, params)
 	if err != nil {
 		return nil, err
 	}
-
-	ids := make(map[int64]int64, len(results))
-	var nytID, id int64
-	_, err = pgx.ForEachRow(rows, []any{&nytID, &id}, func() error {
-		ids[nytID] = id
-		return nil
-	})
-	return ids, err
+	ids := make(map[int64]int64, len(rows))
+	for _, row := range rows {
+		if row.NytUserID != nil {
+			ids[*row.NytUserID] = int64(row.ID)
+		}
+	}
+	return ids, nil
 }
 
 // insertTimes records a solve time for every user who has one.
-func insertTimes(ctx context.Context, tx pgx.Tx, results []Result, userIDs map[int64]int64, date time.Time) error {
-	day := date.UTC().Format(time.DateOnly)
-	var args []any
+func insertTimes(ctx context.Context, q *store.Queries, results []Result, userIDs map[int64]int64, date time.Time) error {
+	params := store.InsertTimesParams{Date: StartOfDay(date)}
 	for _, r := range results {
 		if r.SolveTimeSeconds == nil {
 			continue
@@ -100,35 +98,11 @@ func insertTimes(ctx context.Context, tx pgx.Tx, results []Result, userIDs map[i
 		if !ok {
 			return fmt.Errorf("no database ID for NYT user %d", r.NYTUserID)
 		}
-		args = append(args, id, *r.SolveTimeSeconds, day)
+		params.UserIds = append(params.UserIds, id)
+		params.TimesInSeconds = append(params.TimesInSeconds, *r.SolveTimeSeconds)
 	}
-	if len(args) == 0 {
+	if len(params.UserIds) == 0 {
 		return nil
 	}
-
-	query := "INSERT INTO times (user_id, time_in_seconds, date) VALUES " +
-		placeholders(len(args)/3, 3) + " ON CONFLICT DO NOTHING"
-	_, err := tx.Exec(ctx, query, args...)
-	return err
-}
-
-// placeholders returns "($1, $2), ($3, $4), ..." for rows tuples of cols values.
-func placeholders(rows, cols int) string {
-	var b strings.Builder
-	n := 1
-	for row := 0; row < rows; row++ {
-		if row > 0 {
-			b.WriteString(", ")
-		}
-		b.WriteByte('(')
-		for col := 0; col < cols; col++ {
-			if col > 0 {
-				b.WriteString(", ")
-			}
-			fmt.Fprintf(&b, "$%d", n)
-			n++
-		}
-		b.WriteByte(')')
-	}
-	return b.String()
+	return q.InsertTimes(ctx, params)
 }

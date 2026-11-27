@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/theodoretliu/crossword-leaderboard/internal/store"
 )
 
 // See api-reverse-engineer.md at the repo root for how these were obtained.
@@ -43,11 +44,8 @@ var defaultClient = &http.Client{Timeout: 10 * time.Second}
 // DBCookie returns a cookie source that reads the stored cookie from the
 // database each time it is called.
 func DBCookie(pool *pgxpool.Pool) func(context.Context) (string, error) {
-	return func(ctx context.Context) (string, error) {
-		var cookie string
-		err := pool.QueryRow(ctx, "SELECT value FROM cookies LIMIT 1").Scan(&cookie)
-		return cookie, err
-	}
+	q := store.New(pool)
+	return q.GetCookie
 }
 
 type gqlUser struct {

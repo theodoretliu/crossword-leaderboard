@@ -4,8 +4,6 @@ import (
 	"context"
 	"sort"
 	"time"
-
-	"github.com/jackc/pgx/v5"
 )
 
 type stats struct {
@@ -40,26 +38,21 @@ type UserResponse struct {
 }
 
 func UserHandler(userId int64) UserResponse {
-	var username string
-	err := pool.QueryRow(context.Background(), "SELECT name FROM users where id = $1", userId).Scan(&username)
+	ctx := context.Background()
+	name, err := queries.GetUserName(ctx, int32(userId))
+	if err != nil {
+		panic(err)
+	}
+	username := deref(name)
+
+	rows, err := queries.ListUserTimes(ctx, userId)
 	if err != nil {
 		panic(err)
 	}
 
-	rows, err := pool.Query(
-		context.Background(),
-		`
-			SELECT time_in_seconds, date FROM times WHERE user_id = $1 ORDER BY date(date) ASC;
-		`, userId)
-
-	if err != nil {
-		panic(err)
-	}
-
-	allTimes, err := pgx.CollectRows(rows, pgx.RowToStructByPos[timeStruct])
-
-	if err != nil {
-		panic(err)
+	allTimes := make([]timeStruct, len(rows))
+	for i, row := range rows {
+		allTimes[i] = timeStruct{TimeInSeconds: int64(row.TimeInSeconds), Date: row.Date}
 	}
 
 	longestStreak := int64(0)

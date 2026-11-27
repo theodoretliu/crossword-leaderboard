@@ -1,10 +1,6 @@
 package main
 
-import (
-	"context"
-
-	"github.com/jackc/pgx/v5"
-)
+import "context"
 
 type AllUsersResponse struct {
 	Users []struct {
@@ -14,21 +10,18 @@ type AllUsersResponse struct {
 }
 
 func AllUsersHandler() AllUsersResponse {
-	query := `SELECT id, name FROM users;`
-
-	rows, err := pool.Query(context.Background(), query)
+	rows, err := queries.ListUsers(context.Background())
 	if err != nil {
 		panic(err)
 	}
 
-	resRows, err := pgx.CollectRows(rows, pgx.RowToStructByName[struct {
+	resp := AllUsersResponse{Users: make([]struct {
 		Id   int64
 		Name string
-	}])
-
-	if err != nil {
-		panic(err)
+	}, len(rows))}
+	for i, r := range rows {
+		resp.Users[i].Id = int64(r.ID)
+		resp.Users[i].Name = deref(r.Name)
 	}
-
-	return AllUsersResponse{Users: resRows}
+	return resp
 }

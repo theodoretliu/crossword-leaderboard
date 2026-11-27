@@ -16,9 +16,3 @@ func TestUniqueByUser(t *testing.T) {
 		t.Error("uniqueByUser modified its input")
 	}
 }
-
-func TestPlaceholders(t *testing.T) {
-	if got, want := placeholders(2, 3), "($1, $2, $3), ($4, $5, $6)"; got != want {
-		t.Errorf("placeholders(2, 3) = %q, want %q", got, want)
-	}
-}
