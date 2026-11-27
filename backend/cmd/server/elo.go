@@ -122,7 +122,7 @@ func computeElo() error {
 			return err
 		}
 
-		for i := 0; i < len(arr); i++ {
+		for i := range arr {
 			for j := i + 1; j < len(arr); j++ {
 				user := arr[i]
 				opponent := arr[j]
