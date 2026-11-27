@@ -25,6 +25,11 @@ import {
   CartesianGrid,
   Tooltip,
   Scatter,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
 } from "recharts";
 import {
   ChartConfig,
@@ -49,6 +54,62 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
+const radarConfig = {
+  percentile: {
+    label: "You",
+    color: "hsl(var(--chart-1))",
+  },
+  median: {
+    label: "50th percentile",
+    color: "hsl(var(--muted-foreground))",
+  },
+} satisfies ChartConfig;
+
+// ISO weekday order, matching the API (1 = Monday).
+const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+type RadarDatum = {
+  day: string;
+  // Share of everyone else's solves on this weekday slower than this user's
+  // median, 0-100.
+  percentile: number | null;
+  median: number;
+  medianTime: number | null;
+  solves: number;
+};
+
+function RadarTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: RadarDatum }[];
+}) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+  const { day, percentile, medianTime, solves } = payload[0].payload;
+  if (percentile === null || medianTime === null) {
+    return (
+      <div className="rounded-lg border bg-background px-2.5 py-1.5 text-xs shadow-xl">
+        <div className="font-medium">{day}</div>
+        <div>No solves yet</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-lg border bg-background px-2.5 py-1.5 text-xs shadow-xl">
+      <div className="font-medium">{day}</div>
+      <div>Median {secondsToMinutes(medianTime)}</div>
+      <div>Faster than {Math.round(percentile)}% of everyone else&apos;s solves</div>
+      <div className="text-muted-foreground">
+        {solves} {solves === 1 ? "solve" : "solves"}
+      </div>
+    </div>
+  );
+}
+
 const StatsType = z.object({
   Average: z.number(),
   Median: z.number(),
@@ -68,6 +129,14 @@ const ResponseType = z.object({
     z.object({
       t: z.number(),
       d: z.coerce.date(),
+    }),
+  ),
+  DayOfWeek: z.array(
+    z.object({
+      Weekday: z.number(),
+      MedianTime: z.number(),
+      NumSolves: z.number(),
+      Percentile: z.number(),
     }),
   ),
 });
@@ -108,6 +177,17 @@ export function User() {
       average100,
       average200,
       t: solve.t,
+    };
+  });
+
+  const radarData: RadarDatum[] = WEEKDAYS.map((day, i) => {
+    const row = data?.DayOfWeek.find((r) => r.Weekday === i + 1);
+    return {
+      day,
+      percentile: row?.Percentile ?? null,
+      median: 50,
+      medianTime: row?.MedianTime ?? null,
+      solves: row?.NumSolves ?? 0,
     };
   });
 
@@ -174,6 +254,46 @@ export function User() {
             </TableBody>
           </Table>
         </div>
+
+        {data.DayOfWeek.length > 0 && (
+          <div className="p-4 pt-0">
+            <h2 className="text-lg font-semibold">Speed by Day of Week</h2>
+            <p className="mb-2 text-sm text-muted-foreground">
+              Your median time on each day of the week, as a percentile of everyone else&apos;s
+              solves on that day. Further out is faster; the dashed ring is the 50th percentile.
+            </p>
+
+            <ChartContainer config={radarConfig} className="mx-auto aspect-square max-h-[360px]">
+              <RadarChart data={radarData} outerRadius="75%">
+                <PolarGrid />
+                <PolarAngleAxis dataKey="day" />
+                <PolarRadiusAxis
+                  domain={[0, 100]}
+                  tickCount={5}
+                  angle={90 - 180 / WEEKDAYS.length}
+                  tick={{ fontSize: 10 }}
+                  axisLine={false}
+                />
+                <ChartTooltip content={<RadarTooltip />} />
+                <Radar
+                  dataKey="median"
+                  stroke="var(--color-median)"
+                  strokeDasharray="4 4"
+                  fill="none"
+                  isAnimationActive={false}
+                />
+                <Radar
+                  dataKey="percentile"
+                  stroke="var(--color-percentile)"
+                  fill="var(--color-percentile)"
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                />
+              </RadarChart>
+            </ChartContainer>
+          </div>
+        )}
 
         <div className="p-4 pt-0">
           <h2 className="mb-4 text-lg font-semibold">Solve Time History</h2>

@@ -24,6 +24,15 @@ type timeStruct struct {
 	Date          time.Time `json:"d"`
 }
 
+// dayOfWeekSpeed is a user's median time on one weekday and its percentile
+// among everyone else's solves that weekday; see GetDayOfWeekSpeed.
+type dayOfWeekSpeed struct {
+	Weekday    int32 // ISO: 1 = Monday, 7 = Sunday
+	MedianTime float64
+	NumSolves  int32
+	Percentile float64 // 0-100, higher is faster
+}
+
 type UserResponse struct {
 	Username      string
 	MiniStats     stats
@@ -35,6 +44,7 @@ type UserResponse struct {
 	PeakElo       float64
 	CurrentElo    float64
 	AllTimes      []timeStruct
+	DayOfWeek     []dayOfWeekSpeed
 }
 
 func UserHandler(userId int64) UserResponse {
@@ -48,6 +58,15 @@ func UserHandler(userId int64) UserResponse {
 	rows, err := queries.ListUserTimes(ctx, userId)
 	if err != nil {
 		panic(err)
+	}
+
+	speedRows, err := queries.GetDayOfWeekSpeed(ctx, userId)
+	if err != nil {
+		panic(err)
+	}
+	dayOfWeek := make([]dayOfWeekSpeed, len(speedRows))
+	for i, row := range speedRows {
+		dayOfWeek[i] = dayOfWeekSpeed(row)
 	}
 
 	allTimes := make([]timeStruct, len(rows))
@@ -240,6 +259,7 @@ func UserHandler(userId int64) UserResponse {
 			PeakElo:       peakElo,
 			CurrentElo:    currentElo,
 			AllTimes:      allTimes,
+			DayOfWeek:     dayOfWeek,
 		}
 	}
 
@@ -252,5 +272,6 @@ func UserHandler(userId int64) UserResponse {
 		CurrentStreak: currentStreak,
 		EloHistory:    []dateElo{},
 		AllTimes:      allTimes,
+		DayOfWeek:     dayOfWeek,
 	}
 }

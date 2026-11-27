@@ -10,6 +10,76 @@ import (
 	"time"
 )
 
+const getDayOfWeekSpeed = `-- name: GetDayOfWeekSpeed :many
+WITH valid AS (
+    SELECT user_id, EXTRACT(ISODOW FROM date)::integer AS weekday, time_in_seconds
+    FROM times
+    WHERE time_in_seconds >= 3
+), mine AS (
+    SELECT
+        weekday,
+        PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY time_in_seconds) AS median_time,
+        COUNT(*) AS num_solves
+    FROM valid
+    WHERE user_id = $1::bigint
+    GROUP BY weekday
+)
+SELECT
+    mine.weekday::integer AS weekday,
+    mine.median_time::float8 AS median_time,
+    mine.num_solves::integer AS num_solves,
+    COALESCE(
+        100 * (
+            COUNT(*) FILTER (WHERE others.time_in_seconds > mine.median_time)
+            + 0.5 * COUNT(*) FILTER (WHERE others.time_in_seconds = mine.median_time)
+        ) / NULLIF(COUNT(others.user_id), 0),
+        50
+    )::float8 AS percentile
+FROM mine
+LEFT JOIN valid AS others
+    ON others.weekday = mine.weekday
+    AND others.user_id <> $1::bigint
+GROUP BY 1, 2, 3
+ORDER BY 1
+`
+
+type GetDayOfWeekSpeedRow struct {
+	Weekday    int32
+	MedianTime float64
+	NumSolves  int32
+	Percentile float64
+}
+
+// GetDayOfWeekSpeed returns, per ISO weekday (1 = Monday, 7 = Sunday), the
+// user's median solve time and where it falls among every other player's solves
+// on that weekday: percentile is the share of those solves slower than the
+// median (ties count half), 50 when there are none. Times under 3 seconds are
+// skipped.
+func (q *Queries) GetDayOfWeekSpeed(ctx context.Context, userID int64) ([]GetDayOfWeekSpeedRow, error) {
+	rows, err := q.db.Query(ctx, getDayOfWeekSpeed, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetDayOfWeekSpeedRow
+	for rows.Next() {
+		var i GetDayOfWeekSpeedRow
+		if err := rows.Scan(
+			&i.Weekday,
+			&i.MedianTime,
+			&i.NumSolves,
+			&i.Percentile,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getUserName = `-- name: GetUserName :one
 SELECT name FROM users WHERE id = $1
 `
