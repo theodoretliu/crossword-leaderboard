@@ -1,7 +1,7 @@
 import React from "react";
 import useSWR from "swr";
 
-import { API_URL } from "api";
+import { API_URL } from "@/api";
 
 import * as z from "zod";
 

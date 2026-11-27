@@ -1,13 +1,12 @@
-import { jsx } from "@emotion/react";
 import { useMemo } from "react";
 import { Header } from "@/components/header";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 
 dayjs.extend(utc);
 
-export default function PreviousWeeks() {
+export function PreviousWeeks() {
   const weekStarts = useMemo(() => {
     let weekStarts = [];
 
@@ -35,7 +34,12 @@ export default function PreviousWeeks() {
         {weekStarts.map((weekStart) => (
           <Link
             key={weekStart.toString()}
-            href={`/week/${weekStart.year()}/${weekStart.month() + 1}/${weekStart.date()}`}
+            to="/week/$year/$month/$day"
+            params={{
+              year: String(weekStart.year()),
+              month: String(weekStart.month() + 1),
+              day: String(weekStart.date()),
+            }}
           >
             {weekStart.format("MMMM D, YYYY")}
           </Link>

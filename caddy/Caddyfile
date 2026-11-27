@@ -1,0 +1,43 @@
+# Single origin: static SPA + API under /api.
+crossword.theodoretliu.com {
+	encode zstd gzip
+
+	# pprof is registered on the Go server; never expose it publicly.
+	handle /api/debug/* {
+		respond 404
+	}
+
+	handle /api/* {
+		uri strip_prefix /api
+		reverse_proxy api:8080
+	}
+
+	handle {
+		root * /srv/www
+
+		# Vite's hashed bundles never change; index.html must always be revalidated.
+		@hashed {
+			path /assets/*
+			file
+		}
+		header @hashed Cache-Control "public, max-age=31536000, immutable"
+		@unhashed not path /assets/*
+		header @unhashed Cache-Control "no-cache"
+
+		# SPA fallback: unknown paths (e.g. /users/123) get index.html and the
+		# client-side router takes over. Missing bundles should 404, not get HTML.
+		@spa {
+			not path /assets/*
+			not file
+		}
+		rewrite @spa /index.html
+		file_server
+	}
+}
+
+# Legacy API hostname, kept until crossword.theodoretliu.com points here and the
+# Vercel frontend is retired.
+api.crossword.theodoretliu.com {
+	respond /debug/* 404
+	reverse_proxy api:8080
+}

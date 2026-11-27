@@ -1,38 +1,60 @@
+# Production: `docker compose --profile production up -d` (deploy.sh does this for you).
+# Local dev database: `docker compose --profile dev up -d dev-database` (bin/dev does this).
+
+x-app: &app
+  image: crossword-server:${IMAGE_TAG:-latest}
+  restart: unless-stopped
+  environment:
+    - DB_URL=${DB_URL}
+    - GIN_MODE=release
+    - DSN=https://514620b5bde14216af129b62e81ffb0e@o370716.ingest.sentry.io/5181475
+  # Docker's embedded DNS forwarding to the GCE metadata resolver broke after ~3 months
+  # of uptime once (Nov 2026); pin public resolvers so containers don't depend on it.
+  dns: [8.8.8.8, 1.1.1.1]
+  logging: &logging
+    driver: json-file
+    options: { max-size: "10m", max-file: "3" }
+
 services:
   api:
-    image: crossword-server
-    environment:
-      - DB_URL=${DB_URL}
-      - GIN_MODE=release
-      - DSN=https://514620b5bde14216af129b62e81ffb0e@o370716.ingest.sentry.io/5181475
-    restart: always
+    <<: *app
     profiles: ["production"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
   scraper:
-    image: crossword-server
-    environment:
-      - DB_URL=${DB_URL}
-      - GIN_MODE=release
-      - DSN=https://514620b5bde14216af129b62e81ffb0e@o370716.ingest.sentry.io/5181475
+    <<: *app
     entrypoint: /bin/scraper.bin
     profiles: ["production"]
-    restart: always
+
   scrapeall:
-    image: crossword-server
-    environment:
-      - DB_URL=${DB_URL}
-      - GIN_MODE=release
-      - DSN=https://514620b5bde14216af129b62e81ffb0e@o370716.ingest.sentry.io/5181475
+    <<: *app
     entrypoint: /bin/scrapeall.bin
+    restart: "no"
     profiles: ["scrapeall"]
+
   caddy:
-    image: caddy
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-    restart: always
+    image: caddy:2
+    restart: unless-stopped
     ports:
       - 80:80
       - 443:443
+      - 443:443/udp
+    volumes:
+      # Mount the directory, not the file: rsync replaces files by rename, and a
+      # single-file bind mount would keep pointing at the old inode.
+      - ./caddy:/etc/caddy:ro
+      - ./www:/srv/www:ro
+      - caddy_data:/data # certificates; must survive container recreation
+      - caddy_config:/config
+    dns: [8.8.8.8, 1.1.1.1]
+    logging: *logging
     profiles: ["production"]
+
   dev-database:
     restart: always
     image: postgres:16
@@ -43,4 +65,13 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
     profiles: ["dev"]
+
+volumes:
+  caddy_data:
+  caddy_config:

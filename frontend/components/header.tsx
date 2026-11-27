@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,7 +11,7 @@ import { Menu } from "lucide-react";
 export const Header = () => {
   return (
     <div className="flex flex-row items-center justify-between gap-4 px-4 py-4">
-      <Link href="/" className="text-xl font-semibold tracking-tight md:text-3xl">
+      <Link to="/" className="text-xl font-semibold tracking-tight md:text-3xl">
         <h1>Teddy's Mini Leaderboard</h1>
       </Link>
 
@@ -27,27 +27,21 @@ export const Header = () => {
 
         <DropdownMenuContent>
           <DropdownMenuItem asChild>
-            <Link href="/leaderboard">Leaderboard</Link>
+            <Link to="/leaderboard">Leaderboard</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/previous_weeks">Previous Weeks</Link>
+            <Link to="/previous_weeks">Previous Weeks</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link href="/settings">Settings</Link>
+            <Link to="/settings">Settings</Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
       <div className="hidden flex-row items-center gap-4 md:flex">
-        <Link href="/leaderboard" passHref legacyBehavior>
-          <a>Leaderboard</a>
-        </Link>
-        <Link href="/previous_weeks" passHref legacyBehavior>
-          <a>Previous Weeks</a>
-        </Link>
-        <Link href="/settings" passHref legacyBehavior>
-          <a>Settings</a>
-        </Link>
+        <Link to="/leaderboard">Leaderboard</Link>
+        <Link to="/previous_weeks">Previous Weeks</Link>
+        <Link to="/settings">Settings</Link>
       </div>
     </div>
   );

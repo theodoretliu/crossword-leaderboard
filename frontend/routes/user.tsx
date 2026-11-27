@@ -1,10 +1,8 @@
-import { jsx } from "@emotion/react";
-import { useRouter } from "next/router";
+import { getRouteApi } from "@tanstack/react-router";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
-import { GetServerSideProps } from "next";
 import { Header } from "@/components/header";
-import { API_URL } from "api";
+import { API_URL } from "@/api";
 import * as z from "zod";
 import useSWR from "swr";
 import {
@@ -15,7 +13,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { dateToFormat, secondsToMinutes } from "utils";
+import { dateToFormat, secondsToMinutes } from "@/utils";
 
 import {
   BarChart,
@@ -83,25 +81,18 @@ async function fetcher(key: string) {
   return ResponseType.parse(json);
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const { userId } = context.query;
-  const initialData = await fetcher(`/users/${userId}`);
+const route = getRouteApi("/users/$userId");
 
-  return { props: { initialData: JSON.parse(JSON.stringify(initialData)) } };
-};
+export function User() {
+  const { userId } = route.useParams();
 
-export default function User({ initialData }: { initialData: z.infer<typeof ResponseType> }) {
-  const router = useRouter();
+  const { error, data } = useSWR(`/users/${userId}`, fetcher);
 
-  const { userId } = router.query;
+  const allTimes = data?.AllTimes ?? [];
 
-  const { error, data } = useSWR(`/users/${userId}`, fetcher, {
-    fallbackData: initialData,
-  });
-
-  const movingAverage = data.AllTimes.map((solve, index) => {
-    const window100 = data.AllTimes.slice(Math.max(0, index - 100), index + 1);
-    const window200 = data.AllTimes.slice(Math.max(0, index - 200), index + 1);
+  const movingAverage = allTimes.map((solve, index) => {
+    const window100 = allTimes.slice(Math.max(0, index - 100), index + 1);
+    const window200 = allTimes.slice(Math.max(0, index - 200), index + 1);
     const average100 =
       window100.reduce((acc, curr) => {
         return acc + (dayjs(curr.d).utc().day() === 6 ? curr.t * (25 / 49) : curr.t);

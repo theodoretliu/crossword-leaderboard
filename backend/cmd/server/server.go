@@ -52,6 +52,10 @@ func main() {
 		port = defaultPort
 	}
 
+	r.GET("/health", func(c *gin.Context) {
+		c.String(http.StatusOK, "ok")
+	})
+
 	r.GET("/new", func(c *gin.Context) {
 		c.JSON(http.StatusOK, NewIndexHandler())
 	})

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import useSWR from "swr";
-import { API_URL } from "api";
+import { API_URL } from "@/api";
 import * as z from "zod";
 import { Header } from "@/components/header";
 import {
@@ -11,7 +11,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { cn } from "@/lib/utils";
 import { secondsToMinutes } from "@/utils";
 
@@ -41,14 +41,8 @@ async function fetcher(url: string) {
   return LeaderboardSchema.parse(data);
 }
 
-export async function getServerSideProps() {
-  const initialData = await fetcher(API_URL + "/leaderboard");
-  return { props: { initialData } };
-}
-
-const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({ initialData }) => {
+export const Leaderboard: React.FC = () => {
   const { data: leaderboardData } = useSWR<LeaderboardEntry[]>(API_URL + "/leaderboard", fetcher, {
-    fallbackData: initialData,
     refreshInterval: 10000,
   });
 
@@ -121,7 +115,8 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({ initialDat
             >
               <TableCell>
                 <Link
-                  href={`/users/${entry.ID}`}
+                  to="/users/$userId"
+                  params={{ userId: String(entry.ID) }}
                   className="text-primary underline-offset-4 hover:underline"
                 >
                   {entry.Name}
@@ -148,5 +143,3 @@ const Leaderboard: React.FC<{ initialData: LeaderboardEntry[] }> = ({ initialDat
     </div>
   );
 };
-
-export default Leaderboard;

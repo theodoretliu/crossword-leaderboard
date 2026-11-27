@@ -1,3 +1,0 @@
-api.crossword.theodoretliu.com {
-	reverse_proxy api:8080
-}

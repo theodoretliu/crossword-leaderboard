@@ -1,9 +1,8 @@
-import { jsx } from "@emotion/react";
 import { useState } from "react";
 import * as z from "zod";
-import { datesToFormat, padRight, secondsToMinutes } from "utils";
-import Link from "next/link";
-import { UserType } from "pages/index";
+import { datesToFormat, padRight, secondsToMinutes } from "@/utils";
+import { Link } from "@tanstack/react-router";
+import { UserType } from "@/lib/schemas";
 import {
   Table as UITable,
   TableBody,
@@ -38,7 +37,8 @@ function Row({ UserId, Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
     <TableRow className="text-right">
       <TableCell className="p-4 text-left">
         <Link
-          href={`/users/${UserId}/`}
+          to="/users/$userId"
+          params={{ userId: String(UserId) }}
           className="text-primary underline-offset-4 hover:underline"
         >
           {Username}
