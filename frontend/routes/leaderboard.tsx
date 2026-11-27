@@ -94,7 +94,7 @@ export const Leaderboard: React.FC = () => {
               >
                 <span className="line-clamp-2">{percentile}</span>
                 {sortColumn === `Percentile${percentile}` && (
-                  <div className="absolute bottom-1 right-1">
+                  <div className="absolute right-1 bottom-1">
                     {ascending ? " \u25B2" : " \u25BC"}
                   </div>
                 )}

@@ -13,18 +13,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { dateToFormat, secondsToMinutes } from "@/utils";
+import { secondsToMinutes } from "@/utils";
 
 import {
   DefaultZIndexes,
-  BarChart,
-  Bar,
   LineChart,
   Line,
   XAxis,
   YAxis,
   CartesianGrid,
-  Scatter,
   RadarChart,
   Radar,
   PolarGrid,
@@ -37,7 +34,6 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { CardTitle } from "@/components/ui/card";
 
 const chartConfig = {
   t: {
