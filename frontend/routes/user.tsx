@@ -16,6 +16,7 @@ import {
 import { dateToFormat, secondsToMinutes } from "@/utils";
 
 import {
+  DefaultZIndexes,
   BarChart,
   Bar,
   LineChart,
@@ -23,7 +24,6 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
   Scatter,
   RadarChart,
   Radar,
@@ -173,7 +173,8 @@ export function User() {
       }, 0) / window200.length;
 
     return {
-      d: solve.d,
+      // Epoch millis: recharts 3 only lays out a time scale on a numeric axis.
+      d: solve.d.getTime(),
       average100,
       average200,
       t: solve.t,
@@ -288,7 +289,7 @@ export function User() {
                   fill="var(--color-percentile)"
                   fillOpacity={0.3}
                   strokeWidth={2}
-                  dot={{ r: 3 }}
+                  dot={{ r: 3, fillOpacity: 0.3 }}
                 />
               </RadarChart>
             </ChartContainer>
@@ -302,7 +303,9 @@ export function User() {
             <LineChart data={movingAverage}>
               <XAxis
                 dataKey="d"
+                type="number"
                 scale="time"
+                domain={["dataMin", "dataMax"]}
                 interval="preserveStartEnd"
                 tickFormatter={(value) => dayjs(value).utc().format("M/D/YY")}
               />
@@ -322,7 +325,9 @@ export function User() {
                 content={
                   <ChartTooltipContent
                     // labelKey="d"
-                    labelFormatter={(value) => dayjs(value).utc().format("MMM D, YYYY")}
+                    labelFormatter={(_, payload) =>
+                      dayjs(payload[0]?.payload.d).utc().format("MMM D, YYYY")
+                    }
                   />
                 }
               />
@@ -336,6 +341,8 @@ export function User() {
                 type="monotone"
               />
 
+              {/* recharts 3 puts line dots in the scatter layer, above every line, so
+                  raise the averages over it to keep them drawn on top of the solves. */}
               <Line
                 dataKey="average100"
                 stroke="var(--color-average100)"
@@ -343,6 +350,7 @@ export function User() {
                 strokeOpacity={0.5}
                 dot={false}
                 type="monotone"
+                zIndex={DefaultZIndexes.scatter + 1}
               />
 
               <Line
@@ -351,9 +359,8 @@ export function User() {
                 strokeWidth={2}
                 dot={false}
                 type="monotone"
+                zIndex={DefaultZIndexes.scatter + 1}
               />
-
-              <Tooltip />
 
               <CartesianGrid strokeDasharray="3 3" />
             </LineChart>
