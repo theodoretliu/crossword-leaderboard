@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	"github.com/theodoretliu/crossword-leaderboard/internal/store"
 )
 
 type userInfo struct {
@@ -24,28 +24,10 @@ type weeksInfo struct {
 func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	firstDayOfWeek := getFirstDayOfWeek(day)
 	daysOfTheWeek := getDaysOfTheWeek(firstDayOfWeek)
-	query := `
-		select u.id, u.name, t.time_in_seconds, t.date from
-		users as u
-		inner join
-		times as t
-		on t.user_id = u.id AND t.date >= $1 AND t.date <= $2
-		order by u.id, t.date;
-	`
-
-	rows, err := pool.Query(context.Background(), query, daysOfTheWeek[0], daysOfTheWeek[6])
-
-	if err != nil {
-		panic(err)
-	}
-
-	resRows, err := pgx.CollectRows(rows, pgx.RowToStructByPos[struct {
-		Id            int64
-		Name          string
-		TimeInSeconds int32
-		Date          time.Time
-	}])
-
+	rows, err := queries.ListTimesBetween(context.Background(), store.ListTimesBetweenParams{
+		StartDate: daysOfTheWeek[0],
+		EndDate:   daysOfTheWeek[6],
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -55,10 +37,11 @@ func getWeeksInfo(day time.Time, shouldComputeElo bool) weeksInfo {
 	var currentUser string
 	dateIndex := 0
 
-	for _, row := range resRows {
-		if row.Name != currentUser {
-			result = append(result, userInfo{row.Id, row.Name, []int32{}, 0, 1000.0, false})
-			currentUser = row.Name
+	for _, row := range rows {
+		name := deref(row.Name)
+		if name != currentUser {
+			result = append(result, userInfo{int64(row.ID), name, []int32{}, 0, 1000.0, false})
+			currentUser = name
 			dateIndex = 0
 		}
 

@@ -14,10 +14,12 @@ import (
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/theodoretliu/crossword-leaderboard/internal/store"
 )
 
 var db *sql.DB
 var pool *pgxpool.Pool
+var queries *store.Queries
 
 const defaultPort = "8080"
 
@@ -36,6 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	queries = store.New(pool)
 
 	defer db.Close()
 
@@ -84,7 +87,7 @@ func main() {
 	})
 
 	r.GET("/users/:userId", func(c *gin.Context) {
-		userId, err := strconv.ParseInt(c.Param("userId"), 10, 64)
+		userId, err := strconv.ParseInt(c.Param("userId"), 10, 32) // users.id is an integer
 		if err != nil {
 			panic(err)
 		}

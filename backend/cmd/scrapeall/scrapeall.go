@@ -1,55 +1,76 @@
+// Command scrapeall scrapes every puzzle date once, from scrape.FirstDate (or
+// the YYYY-MM-DD date given as the only argument) through today.
 package main
 
 import (
 	"context"
-	"fmt"
+	"log"
 	"os"
+	"os/signal"
 	"sync"
+	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/theodoretliu/crossword-leaderboard/internal/scrape"
 )
 
+// concurrency bounds simultaneous requests to NYT and open transactions.
+const concurrency = 8
+
 func main() {
-	pool, err := pgxpool.New(context.Background(), os.Getenv("DB_URL"))
-
-	if err != nil {
-		panic(err)
-	}
-
-	minDate := time.Date(scrape.MinYear, scrape.MinMonth, scrape.MinDay, 0, 0, 0, 0, time.UTC)
-
+	start := scrape.FirstDate
 	if len(os.Args) == 2 {
-		inputDate := os.Args[1]
-
-		minDate, err = time.Parse("2006-01-02", inputDate)
-
-		if err != nil {
-			fmt.Println("Error parsing date:", err)
-			os.Exit(1)
+		var err error
+		if start, err = time.Parse(time.DateOnly, os.Args[1]); err != nil {
+			log.Fatalf("parsing start date: %v", err)
 		}
 	}
 
-	oneDayDuration := time.Duration(int64(24 * 60 * 60 * 1_000_000_000))
-	today := time.Now().UTC().Truncate(oneDayDuration)
-	iterDate := minDate
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	var wg sync.WaitGroup
+	pool, err := pgxpool.New(ctx, os.Getenv("DB_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pool.Close()
 
-	for iterDate.Compare(today) <= 0 {
-		wg.Add(1)
-		go func(date time.Time) {
-			defer wg.Done()
-			err := scrape.DbActionsForDate(pool, date)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}(iterDate)
-
-		fmt.Println(minDate, iterDate)
-		iterDate = iterDate.AddDate(0, 0, 1)
+	s := &scrape.Scraper{
+		Pool:    pool,
+		Fetcher: &scrape.GraphQLFetcher{Cookie: scrape.DBCookie(pool)},
 	}
 
+	var (
+		wg     sync.WaitGroup
+		failed atomic.Int64
+		slots  = make(chan struct{}, concurrency)
+	)
+	today := scrape.StartOfDay(time.Now())
+
+dates:
+	for date := start; !date.After(today); date = date.AddDate(0, 0, 1) {
+		select {
+		case slots <- struct{}{}:
+		case <-ctx.Done():
+			break dates
+		}
+
+		wg.Add(1)
+		go func(date time.Time) {
+			defer func() { <-slots; wg.Done() }()
+			if err := s.ScrapeDate(ctx, date); err != nil {
+				log.Print(err)
+				failed.Add(1)
+			}
+		}(date)
+	}
 	wg.Wait()
+
+	if n := failed.Load(); n > 0 {
+		log.Printf("%d dates failed", n)
+		stop()
+		os.Exit(1)
+	}
 }
