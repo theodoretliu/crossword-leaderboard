@@ -1,4 +1,4 @@
-FROM golang:1.21.11
+FROM golang:1.27.4
 
 RUN apt update && apt upgrade -y
 
