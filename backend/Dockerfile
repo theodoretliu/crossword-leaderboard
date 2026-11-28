@@ -10,18 +10,21 @@ RUN --mount=type=cache,target=/go/pkg/mod go mod download
 COPY cmd cmd
 COPY internal internal
 
-# Static binaries (nothing here needs cgo), stripped of debug info.
+# One static binary (nothing here needs cgo), stripped of debug info.
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath -ldflags="-s -w" -o /out/ ./cmd/server ./cmd/scraper ./cmd/scrapeall
+    go build -trimpath -ldflags="-s -w" -o /out/crossword ./cmd/crossword
 
 FROM alpine:3.24
 # ca-certificates: TLS to Postgres, NYT, and Sentry. curl: the api healthcheck
 # in docker-compose.yml.
 RUN apk add --no-cache ca-certificates curl
-# The .bin names are what docker-compose.yml's entrypoints refer to.
-COPY --from=build /out/server /bin/server.bin
-COPY --from=build /out/scraper /bin/scraper.bin
-COPY --from=build /out/scrapeall /bin/scrapeall.bin
+COPY --from=build /out/crossword /bin/crossword
+# The binary picks its command from the name it's run as. These .bin names are
+# what docker-compose.yml's entrypoints (and images from before the merge) use,
+# so rolling back to an older image tag keeps working.
+RUN ln -s crossword /bin/server.bin && \
+    ln -s crossword /bin/scraper.bin && \
+    ln -s crossword /bin/scrapeall.bin
 ENTRYPOINT ["/bin/server.bin"]

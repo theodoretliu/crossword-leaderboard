@@ -1,11 +1,12 @@
-// Command scraper keeps every puzzle date's leaderboard up to date, re-scraping
-// recent dates often and old dates rarely (see scrape.Interval).
+// Package scraper implements the long-running scraper command, which keeps
+// every puzzle date's leaderboard up to date, re-scraping recent dates often
+// and old dates rarely (see scrape.Interval).
 //
 // The database is Neon's free tier, which bills for the minutes the database is
 // awake and suspends it after 5 idle minutes. So scrapes only update an
 // in-memory scrape.Batcher, changes are written at most once per flushInterval,
 // and the cookie is cached; between flushes the database is left to sleep.
-package main
+package scraper
 
 import (
 	"context"
@@ -31,7 +32,8 @@ type scraper struct {
 	batcher *scrape.Batcher
 }
 
-func main() {
+// Main runs the scraper until it receives SIGINT or SIGTERM.
+func Main() {
 	if err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv("DSN"),
 		AttachStacktrace: true,

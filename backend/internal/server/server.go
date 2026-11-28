@@ -1,4 +1,5 @@
-package main
+// Package server implements the HTTP API behind the leaderboard site.
+package server
 
 import (
 	"context"
@@ -23,7 +24,8 @@ var queries *store.Queries
 
 const defaultPort = "8080"
 
-func main() {
+// Main serves the API on $PORT (default 8080).
+func Main() {
 	err := sentry.Init(sentry.ClientOptions{
 		Dsn:              os.Getenv("DSN"),
 		AttachStacktrace: true,
