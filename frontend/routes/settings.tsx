@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { Header } from "@/components/header";
 import useSWR from "swr";
-import * as z from "zod";
+import * as z from "zod/mini";
 import { API_URL } from "@/api";
 import { Button } from "@/components/ui/button";
 import { useRemovedUsers } from "@/hooks/use_removed_users";

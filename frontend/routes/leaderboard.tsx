@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import useSWR from "swr";
 import { API_URL } from "@/api";
-import * as z from "zod";
+import * as z from "zod/mini";
 import { Header } from "@/components/header";
 import {
   Table,

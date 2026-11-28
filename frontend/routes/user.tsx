@@ -3,7 +3,7 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import { Header } from "@/components/header";
 import { API_URL } from "@/api";
-import * as z from "zod";
+import * as z from "zod/mini";
 import useSWR from "swr";
 import {
   Table,

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import * as z from "zod";
+import * as z from "zod/mini";
 import { padRight, secondsToMinutes } from "@/utils";
 import { Link } from "@tanstack/react-router";
 import { UserType } from "@/lib/schemas";

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import * as z from "zod";
+import * as z from "zod/mini";
 
 const removedUsersSchema = z.array(z.number());
 
