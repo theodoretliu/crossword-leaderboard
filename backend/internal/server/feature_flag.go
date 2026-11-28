@@ -1,4 +1,4 @@
-package main
+package server
 
 func GetFeatureFlag(flagName string) (bool, error) {
 	return false, nil

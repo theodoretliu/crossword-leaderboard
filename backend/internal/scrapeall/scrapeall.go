@@ -1,6 +1,7 @@
-// Command scrapeall scrapes every puzzle date once, from scrape.FirstDate (or
-// the YYYY-MM-DD date given as the only argument) through today.
-package main
+// Package scrapeall implements the scrapeall command, which scrapes every
+// puzzle date once, from scrape.FirstDate (or the YYYY-MM-DD date given as the
+// only argument) through today.
+package scrapeall
 
 import (
 	"context"
@@ -19,11 +20,12 @@ import (
 // concurrency bounds simultaneous requests to NYT and open transactions.
 const concurrency = 8
 
-func main() {
+// Main runs the command; args excludes the command name.
+func Main(args []string) {
 	start := scrape.FirstDate
-	if len(os.Args) == 2 {
+	if len(args) == 1 {
 		var err error
-		if start, err = time.Parse(time.DateOnly, os.Args[1]); err != nil {
+		if start, err = time.Parse(time.DateOnly, args[0]); err != nil {
 			log.Fatalf("parsing start date: %v", err)
 		}
 	}

@@ -51,10 +51,10 @@ if [[ ! -d frontend/node_modules || frontend/package-lock.json -nt frontend/node
 fi
 
 echo "[dev] building api..."
-(cd backend && go build -o tmp/server ./cmd/server)
+(cd backend && go build -o tmp/crossword ./cmd/crossword)
 
 # `exec` makes $! the server itself, so the trap below stops exactly that process.
-(cd backend && PORT=$API_PORT exec ./tmp/server) > >(awk '{ print "[api] " $0; fflush() }') 2>&1 &
+(cd backend && PORT=$API_PORT exec ./tmp/crossword server) > >(awk '{ print "[api] " $0; fflush() }') 2>&1 &
 API_PID=$!
 trap 'kill "$API_PID" 2>/dev/null || true' EXIT
 
