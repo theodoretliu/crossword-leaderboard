@@ -1,4 +1,4 @@
-import * as z from "zod";
+import * as z from "zod/mini";
 
 export const UserType = z.object({
   UserId: z.number(),

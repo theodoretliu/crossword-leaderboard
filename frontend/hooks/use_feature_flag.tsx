@@ -3,7 +3,7 @@ import useSWR from "swr";
 
 import { API_URL } from "@/api";
 
-import * as z from "zod";
+import * as z from "zod/mini";
 
 const FeatureFlagType = z.object({
   Status: z.boolean(),

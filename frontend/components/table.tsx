@@ -1,6 +1,6 @@
 import { useState } from "react";
-import * as z from "zod";
-import { datesToFormat, padRight, secondsToMinutes } from "@/utils";
+import * as z from "zod/mini";
+import { padRight, secondsToMinutes } from "@/utils";
 import { Link } from "@tanstack/react-router";
 import { UserType } from "@/lib/schemas";
 import {
@@ -11,12 +11,10 @@ import {
   TableRow,
   TableCell,
 } from "./ui/table";
-import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import _sortBy from "lodash/sortBy";
 import _reversed from "lodash/reverse";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
-import { CircleHelp } from "lucide-react";
 import { useRemovedUsers } from "@/hooks/use_removed_users";
 
 interface TableProps {
@@ -32,7 +30,7 @@ interface RowProps {
   Elo: number;
 }
 
-function Row({ UserId, Username, WeeksTimes, WeeksAverage, Elo }: RowProps) {
+function Row({ UserId, Username, WeeksTimes, WeeksAverage }: RowProps) {
   return (
     <TableRow className="text-right">
       <TableCell className="p-4 text-left">
@@ -118,7 +116,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
             {headers.map((header, i) => (
               <TableHead
                 className={cn(
-                  "relative cursor-pointer whitespace-nowrap p-4 text-white",
+                  "relative cursor-pointer p-4 whitespace-nowrap text-white",
                   i > 0 && "text-right",
                 )}
                 key={JSON.stringify(header)}
@@ -132,7 +130,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
               >
                 <span className="line-clamp-2">{header.title}</span>
                 {header.key === orderBy && (
-                  <div className="absolute bottom-1 right-1">
+                  <div className="absolute right-1 bottom-1">
                     {!ascending ? " \u25BC" : " \u25B2"}
                   </div>
                 )}
@@ -151,12 +149,12 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
           {newUsers.length > 0 && (
             <>
               {orderBy !== "WeeksAverage" &&
-                sortedUsers.map((user, i) => <Row {...user} key={JSON.stringify(user)} />)}
+                sortedUsers.map((user) => <Row {...user} key={JSON.stringify(user)} />)}
 
               {orderBy === "WeeksAverage" &&
                 (qualifiedUsers.length > 0 ? (
                   <>
-                    {qualifiedUsers.map((user, i) => (
+                    {qualifiedUsers.map((user) => (
                       <Row {...user} key={JSON.stringify(user)} />
                     ))}
                   </>
@@ -183,7 +181,7 @@ export const Table = ({ daysOfTheWeek, rows }: TableProps) => {
                         weekly ranking.
                       </TableCell>
                     </TableRow>
-                    {unqualifiedUsers.map((user, i) => (
+                    {unqualifiedUsers.map((user) => (
                       <Row {...user} key={JSON.stringify(user)} />
                     ))}
                   </>

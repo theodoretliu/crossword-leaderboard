@@ -13,7 +13,7 @@
 #   cd /opt/crossword && sudo docker images crossword-server      # pick a tag
 #   sudo env IMAGE_TAG=<tag> docker compose --profile production up -d
 #
-# Frontend build-time env (e.g. VITE_POSTHOG_KEY) is read from your shell or
+# Frontend build-time env (e.g. VITE_API_URL) is read from your shell or
 # frontend/.env.production.local.
 set -euo pipefail
 

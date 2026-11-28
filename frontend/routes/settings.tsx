@@ -1,8 +1,7 @@
-import { jsx, css } from "@emotion/react";
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Header } from "@/components/header";
 import useSWR from "swr";
-import * as z from "zod";
+import * as z from "zod/mini";
 import { API_URL } from "@/api";
 import { Button } from "@/components/ui/button";
 import { useRemovedUsers } from "@/hooks/use_removed_users";
@@ -37,10 +36,7 @@ function UserRow(props: UserRowProps) {
 export function Settings() {
   const [removedUsers, setRemovedUsers] = useRemovedUsers();
 
-  const [onClient, setIsOnClient] = useState(false);
-
   useEffect(() => {
-    setIsOnClient(true);
     document.title = "Mini Crossword Leaderboard: Settings";
     return () => {
       document.title = DEFAULT_TITLE;
@@ -48,10 +44,6 @@ export function Settings() {
   }, []);
 
   const { error, data } = useSWR("/all_users", fetcher);
-
-  if (!onClient) {
-    return null;
-  }
 
   if (error) {
     return (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Header } from "@/components/header";
 import { API_URL } from "@/api";
 import dayjs from "dayjs";
@@ -7,9 +7,6 @@ import useSWR from "swr";
 import { ResponseType } from "@/lib/schemas";
 import { Table } from "@/components/table";
 import { datesToFormat } from "@/utils";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
-import { TooltipProvider } from "@/components/ui/tooltip";
 
 dayjs.extend(utc);
 
@@ -27,7 +24,7 @@ export function Index() {
 
   if (error) {
     return (
-      <div className="fixed bottom-0 left-0 right-0 top-0 flex items-center justify-center">
+      <div className="fixed top-0 right-0 bottom-0 left-0 flex items-center justify-center">
         Something went wrong :(
       </div>
     );
